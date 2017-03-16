@@ -1,0 +1,36 @@
+Westwood font format information
+
+FNT Header:
+
+ 00 Int16 FileSize;            // Size of the file
+ 02 Byte DataFormat;           // Data format for the image data: 00 for 4-bit image data, 02 for 8-bit.
+ 03 Byte Unknown03;            // Unknown entry (0x05 in EOB/C&C/RA1, 0x00 in TS)
+ 04 Int16 Unknown04;           // [Unused?] Unknown entry (always 0x000e) (font version position?)
+ 06 Int16 FontDataListOffset;  // Absolute offset of the start of FontDataList (Normally 0x14)
+ 08 Int16 WidthsListOffset;    // Absolute offset of the start of WidthsList
+ 0A Int16 FontDataOffset;      // [Unused?] Start of the actual font data? Should equals the first entry in FontDataList, but doesn't in TS.
+ 0C Int16 HeightsListOffset;   // Absolute offset of the start of HeightsList
+ 0E Int16 Unknown0E;           // [Unused?] Unknown entry (always 0x1011 or 0x1012; 0x0000 in TS) (font version?)
+ 10 Byte AlwaysZero;           // [Unused?] Align byte. Always 0x00
+ 11 Byte LastCharIndex;        // Last (0-based) character index. Add 1 to get the amount of characters.
+ 12 Byte FontHeight;           // Overall maximum font height.
+ 13 Byte FontWidth;            // Overall maximum font width.
+
+@06 Int16[LastChar+1] FontDataList;  // array with the positions of all font entries
+@08 Byte[LastChar+1] WidthsList;     //  array with the widths of all font entries
+@0C Byte[LastChar+1][2] HeightsList; // array with the vertical offset and char height of all font entries
+
+---
+
+Actual font data:
+At the positions indicated in the FontDataList, the actual data of the font images can be found.
+Depending on the DataFormat byte, this is 4BPP or 8BPP data.
+
+4BPP data means 2 pixels per byte, and aligned in full bytes per line, so if an entry's
+width is an odd number, the last half of the last byte on the line is left unused rather
+than being the first pixel of the next line.
+
+---
+
+FontDataList does not need a unique entry for each character. Identical characters, like the filler
+characters on indices before 0x20, generally all refer to the same data block, to preserve space.
