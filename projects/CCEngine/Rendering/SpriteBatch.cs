@@ -142,7 +142,7 @@ namespace CCEngine.Rendering
 			MakeVAO(size, out this.vao, out this.vbo_spr);
 		}
 
-		public SpriteBatch Render(int frame, int remap, float x, float y, float cloak)
+		public SpriteBatch Render(int frame, int remap, float x, float y, float cloak = 0.0f)
 		{
 			if (!drawing)
 				throw new Exception("SpriteBatch.Begin() must be called before Draw()");

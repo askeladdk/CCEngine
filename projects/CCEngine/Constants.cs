@@ -9,7 +9,7 @@ namespace CCEngine
 	public class Constants
 	{
 		// Updates per second.
-		public const float FrameRate = 15.0f;
+		public const int FrameRate = 15;
 
 		// Map width and height in cells.
 		public const int MapSize = 128;
@@ -22,5 +22,9 @@ namespace CCEngine
 
 		// Number of house color remaps in palette.cps.
 		public const int HouseColors = 8;
+
+		// HUD constants.
+		public const int HUDTopBarHeight = 16;
+		public const int HUDSideBarWidth = 160;
 	}
 }

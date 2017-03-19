@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="Collections\OrderedDictionary.cs" />
     <Compile Include="Rendering\FrameBuffer.cs" />
+    <Compile Include="Simulation\CellCoord.cs" />
     <Compile Include="Simulation\Map.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="FileFormats\IniFile.cs" />
@@ -85,7 +86,7 @@
     <Compile Include="Logger.cs" />
     <Compile Include="MessageBus.cs" />
     <Compile Include="Rendering\SpriteBatch.cs" />
-    <Compile Include="Simulation\WorldView.cs" />
+    <Compile Include="Camera.cs" />
     <Compile Include="Simulation\Theater.cs" />
     <Compile Include="VFS\VFS.cs" />
     <Compile Include="VFS\VFSFolder.cs" />

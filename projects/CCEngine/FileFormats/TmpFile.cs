@@ -7,25 +7,24 @@ using OpenTK;
 
 namespace CCEngine.FileFormats
 {
-	public enum TerrainTypes : int
+	public enum TerrainTypes : byte
 	{
-		Filler = 0,
-		Clear  = 1,
-		Beach  = 2,
-		Rock   = 3,
-		Road   = 4,
-		Water  = 5,
-		River  = 6,
-		Rough  = 7,
-		Ore    = 8,
-		Wall   = 9,
+		Clear  = 0,
+		Beach  = 1,
+		Rock   = 2,
+		Road   = 3,
+		Water  = 4,
+		River  = 5,
+		Rough  = 6,
+		Ore    = 7,
+		Wall   = 8,
 	}
 
 	public class TmpFile : Sprite
 	{
 		private static TerrainTypes[] nibble_to_types =
 		{
-			TerrainTypes.Filler,
+			TerrainTypes.Clear,
 			TerrainTypes.Clear,
 			TerrainTypes.Clear,
 			TerrainTypes.Clear,

@@ -14,25 +14,30 @@ namespace CCEngine.Simulation
 		private readonly string extension;
 		private readonly Palette palette;
 		private readonly Dictionary<ushort, TmpFile> templates;
+		private readonly Dictionary<string, TerrainObject> terrains;
 
-		public int Count { get { return 65536; } }
 		public Palette Palette { get { return palette; } }
 		public string Name { get { return name; } }
 
-		public TmpFile this[ushort tmpidx]
+		public TmpFile GetTemplate(ushort tmpidx)
 		{
-			get
-			{
-				return templates.GetOrDefault(tmpidx, null);
-			}
+			return templates.GetOrDefault(tmpidx, null);
 		}
 
-		public Theater(string name, string extension, Palette palette, Dictionary<ushort, TmpFile> templates)
+		public TerrainObject GetTerrainObject(string id)
+		{
+			return terrains.GetOrDefault(id);
+		}
+
+		public Theater(string name, string extension, Palette palette,
+			Dictionary<ushort, TmpFile> templates,
+			Dictionary<string, TerrainObject> terrains)
 		{
 			this.name = name;
 			this.extension = extension;
 			this.palette = palette;
 			this.templates = templates;
+			this.terrains = terrains;
 		}
 	}
 }

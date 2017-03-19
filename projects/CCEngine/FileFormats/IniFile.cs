@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,7 +12,91 @@ namespace CCEngine.FileFormats
 
 	public class IniFile
 	{
-		public static IniDictionary Read(Stream stream)
+		private readonly IniDictionary sections;
+
+		private IniFile(IniDictionary sections)
+		{
+			this.sections = sections;
+		}
+
+		public ICollection<string> Sections
+		{
+			get { return sections.Keys; }
+		}
+
+		public bool Contains(string section)
+		{
+			return sections.ContainsKey(section);
+		}
+
+		public bool Contains(string section, string key)
+		{
+			IniSection sec;
+			if (sections.TryGetValue(section, out sec))
+				return sec.Contains(key);
+			return false;
+		}
+
+		public IEnumerable<KeyValuePair<string, string>> GetSection(string section)
+		{
+			IniSection sec;
+			if (sections.TryGetValue(section, out sec))
+				return sec;
+			return null;
+		}
+
+		public ICollection<string> GetSectionKeys(string section)
+		{
+			IniSection sec;
+			if (sections.TryGetValue(section, out sec))
+				return sec.Keys;
+			return null;
+		}
+
+		public ICollection<string> GetSectionValues(string section)
+		{
+			IniSection sec;
+			if (sections.TryGetValue(section, out sec))
+				return sec.Values;
+			return null;
+		}
+
+		public string GetString(string section, string key, string otherwise = null)
+		{
+			IniSection sec;
+			if (sections.TryGetValue(section, out sec))
+			{
+				string value;
+				return sec.TryGetValue(key, out value) ? value : otherwise;
+			}
+			return null;
+		}
+
+		public int GetInt(string section, string key, int otherwise = 0)
+		{
+			int n;
+			return int.TryParse(GetString(section, key), out n) ? n : otherwise;
+		}
+
+		public uint GetUint(string section, string key, uint otherwise = 0)
+		{
+			uint n;
+			return uint.TryParse(GetString(section, key), out n) ? n : otherwise;
+		}
+
+		public float GetFloat(string section, string key, float otherwise = 0.0f)
+		{
+			float n;
+			return float.TryParse(GetString(section, key), out n) ? n : otherwise;
+		}
+
+		public bool GetBool(string section, string key, bool otherwise = false)
+		{
+			string value = GetString(section, key);
+			return value != null ? "yYtT".IndexOf(value[0]) >= 0 : otherwise;
+		}
+
+		public static IniFile Read(Stream stream)
 		{
 			StreamReader reader = new StreamReader(stream);
 			IniDictionary sections = new IniDictionary();
@@ -49,46 +134,13 @@ namespace CCEngine.FileFormats
 						continue;
 					key = line.Substring(0, index).Trim();
 					val = line.Substring(index + 1).Trim();
-					// the game always choses the first duplicate key entry
+					// the game always chooses the first duplicate key entry
 					if(!section.Contains(key))
 						section[key] = val;
 				}
 			}
 
-			return sections;
-		}
-	}
-
-	public static class IniFileExtensions
-	{
-		public static string GetString(this IniSection section, string key, string def = null)
-		{
-			string value;
-			return section.TryGetValue(key, out value) ? value : def;
-		}
-
-		public static int GetInt(this IniSection section, string key, int otherwise = 0)
-		{
-			int n;
-			return int.TryParse(section.GetString(key), out n) ? n : otherwise;
-		}
-
-		public static uint GetUint(this IniSection section, string key, uint otherwise = 0)
-		{
-			uint n;
-			return uint.TryParse(section.GetString(key), out n) ? n : otherwise;
-		}
-
-		public static float GetFloat(this IniSection section, string key, float otherwise = 0.0f)
-		{
-			float n;
-			return float.TryParse(section.GetString(key), out n) ? n : otherwise;
-		}
-
-		public static bool GetBool(this IniSection section, string key, bool otherwise = false)
-		{
-			string value = section.GetString(key);
-			return value != null ? "yYtT".IndexOf(value[0]) >= 0 : otherwise;
+			return new IniFile(sections);
 		}
 	}
 

@@ -34,6 +34,7 @@ namespace CCEngine
 		private static Game instance;
 		private Matrix4 projection;
 		private SpriteBatch batch;
+		private Camera camera = new Camera();
 
 		public static Game Instance { get { return instance; } }
 
@@ -43,6 +44,7 @@ namespace CCEngine
 		public VFS.VFS VFS { get { return this.vfs; } }
 		public Matrix4 Projection { get { return this.projection; } }
 		public SpriteBatch SpriteBatch { get { return this.batch; } }
+		public Camera Camera { get { return this.camera; } }
 
 		private Game(int width, int height,
 			GameWindowFlags flags = GameWindowFlags.Default,
@@ -76,7 +78,7 @@ namespace CCEngine
 		protected override void OnLoad(EventArgs e)
 		{
 			base.OnLoad(e);
-			GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f);
+			GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		}
 
 		protected override void OnResize(EventArgs e)
@@ -85,6 +87,12 @@ namespace CCEngine
 			GL.Viewport(ClientRectangle.X, ClientRectangle.Y, ClientRectangle.Width, ClientRectangle.Height);
 			this.projection = Matrix4.CreateOrthographicOffCenter(
 				0, ClientRectangle.Width, ClientRectangle.Height, 0, -1, 1);
+			this.camera.ViewPort = new Rectangle(
+				0,
+				Constants.HUDTopBarHeight,
+				ClientRectangle.Width - Constants.HUDSideBarWidth,
+				ClientRectangle.Height
+			);
 		}
 
 		protected override void OnUpdateFrame(FrameEventArgs e)
@@ -130,6 +138,18 @@ namespace CCEngine
 			return bmp;
 		}
 
+		public void ScissorCamera()
+		{
+			var viewPort = this.camera.ViewPort;
+			GL.Scissor(
+				0,
+				ClientRectangle.Height - viewPort.Height,
+				viewPort.Width,
+				viewPort.Height - viewPort.Y
+			);
+		}
+
+
 		public T LoadAsset<T>(string filename, bool cache = true, object parameters = null)
 			where T : class
 		{
@@ -165,13 +185,13 @@ namespace CCEngine
 				// Load the virtual file system.
 				using(var stream = new StreamReader("ccengine.ini"))
 				{
-					Dictionary<string, OrderedDictionary<string, string>> ini = IniFile.Read(stream.BaseStream);
-					var roots = ini["CCEngine"].GetString("Roots").Split(',');
-					var mixver = (MixFileVersion)ini["CCEngine"].GetInt("MixVersion");
+					var ini = IniFile.Read(stream.BaseStream);
+					var roots = ini.GetString("CCEngine", "Roots").Split(',');
+					var mixver = (MixFileVersion)ini.GetInt("CCEngine", "MixVersion");
 					foreach(var root in roots)
 						g.VFS.AddRoot(Path.GetFullPath(root));
-					foreach (var kv in ini["LoadOrder"])
-						g.VFS.AddMix(kv.Value, mixver);
+					foreach (var mixfile in ini.GetSectionValues("LoadOrder"))
+						g.VFS.AddMix(mixfile, mixver);
 				}
 
 				// Load initial assets.

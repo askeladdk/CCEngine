@@ -45,6 +45,7 @@ namespace CCEngine.Logic
 
 		public void Update(float dt)
 		{
+			Game.Instance.World.Update(dt);
 		}
 
 		public void Render(float dt)
