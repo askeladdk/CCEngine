@@ -25,7 +25,15 @@ namespace CCEngine.VFS
 		{
 			FileInfo fi   = new FileInfo(filename);
 			this.parent   = null;
-			this.mmf      = MemoryMappedFile.CreateFromFile(fi.FullName, FileMode.Open);
+			this.mmf = MemoryMappedFile.CreateFromFile(
+				File.Open(fi.FullName, FileMode.Open, FileAccess.Read, FileShare.Read),
+				null,
+				0,
+				MemoryMappedFileAccess.Read,
+				null,
+				HandleInheritability.None,
+				false
+			);
 			this.offset   = 0;
 			this.size     = fi.Length;
 			this.filename = filename;
