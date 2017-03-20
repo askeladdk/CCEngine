@@ -14,7 +14,7 @@ uniform sampler2D palette;
 
 // Constants.
 const float remaps     = 1.0f / 8.0f;
-const float remap_idx  = 4.0f / 255.0f;
+const float shadow_idx = 4.0f / 255.0f;
 const vec4 cloak_color = vec4(0, 0, 0, 0.50);
 
 void main()
@@ -24,7 +24,7 @@ void main()
 	float idx   = texture2D(sprite, in_FragUV).r;
 	vec4 color  = texture2D(palette, vec2(idx, remap));
 
-	if(idx == remap_idx)
+	if(idx == shadow_idx)
 	{
 		color.a *= (1 - cloak);
 	}
