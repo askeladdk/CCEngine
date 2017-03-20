@@ -93,7 +93,7 @@ namespace CCEngine.FileFormats
 		public bool GetBool(string section, string key, bool otherwise = false)
 		{
 			string value = GetString(section, key);
-			return value != null ? "yYtT".IndexOf(value[0]) >= 0 : otherwise;
+			return value != null ? "1yYtT".IndexOf(value[0]) >= 0 : otherwise;
 		}
 
 		public static IniFile Read(Stream stream)
