@@ -7,7 +7,7 @@ using OpenTK;
 
 namespace CCEngine.FileFormats
 {
-	public enum TerrainTypes : byte
+	public enum TileTypes : byte
 	{
 		Clear  = 0,
 		Beach  = 1,
@@ -22,24 +22,24 @@ namespace CCEngine.FileFormats
 
 	public class TmpFile : Sprite
 	{
-		private static TerrainTypes[] nibble_to_types =
+		private static TileTypes[] nibble_to_types =
 		{
-			TerrainTypes.Clear,
-			TerrainTypes.Clear,
-			TerrainTypes.Clear,
-			TerrainTypes.Clear,
-			TerrainTypes.Clear,
-			TerrainTypes.Clear,
-			TerrainTypes.Beach,
-			TerrainTypes.Clear,
-			TerrainTypes.Rock,
-			TerrainTypes.Road,
-			TerrainTypes.Water,
-			TerrainTypes.River,
-			TerrainTypes.Clear,
-			TerrainTypes.Clear,
-			TerrainTypes.Rough,
-			TerrainTypes.Clear,
+			TileTypes.Clear,
+			TileTypes.Clear,
+			TileTypes.Clear,
+			TileTypes.Clear,
+			TileTypes.Clear,
+			TileTypes.Clear,
+			TileTypes.Beach,
+			TileTypes.Clear,
+			TileTypes.Rock,
+			TileTypes.Road,
+			TileTypes.Water,
+			TileTypes.River,
+			TileTypes.Clear,
+			TileTypes.Clear,
+			TileTypes.Rough,
+			TileTypes.Clear,
 		};
 
 		[StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -60,26 +60,26 @@ namespace CCEngine.FileFormats
 			public   uint index_offset;
 		}
 
-		private readonly TerrainTypes[] typemap;
+		private readonly TileTypes[] typemap;
 		private readonly Vector2 size;
 
 		public Vector2 CellSize { get { return size; } }
 
-		private TmpFile(byte[][] cells, TerrainTypes[] celltypes)
+		private TmpFile(byte[][] cells, TileTypes[] celltypes)
 			: base(cells, Constants.TileSize, Constants.TileSize)
 		{
 			this.typemap = celltypes;
 			this.size = new Vector2(1, 1);
 		}
 
-		private TmpFile(byte[][] cells, TerrainTypes[] celltypes, int xdim, int ydim)
+		private TmpFile(byte[][] cells, TileTypes[] celltypes, int xdim, int ydim)
 			: base(cells, Constants.TileSize, Constants.TileSize, xdim, ydim)
 		{
 			this.typemap = celltypes;
 			this.size = new Vector2(xdim, ydim);
 		}
 
-		public TerrainTypes GetTerrainType(int idx)
+		public TileTypes GetTerrainType(int idx)
 		{
 			return typemap[idx % typemap.Length];
 		}
@@ -93,7 +93,7 @@ namespace CCEngine.FileFormats
 
 			// type maps
 			stream.Seek(hdr.typemap_offset, SeekOrigin.Begin);
-			TerrainTypes[] typemap = new TerrainTypes[single ? 1 : ncells];
+			TileTypes[] typemap = new TileTypes[single ? 1 : ncells];
 			for(int i = 0; i < typemap.Length; i++)
 				typemap[i] = nibble_to_types[stream.ReadByte() & 0xF];
 
