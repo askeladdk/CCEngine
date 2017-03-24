@@ -57,7 +57,7 @@ namespace CCEngine.Simulation
 
 		public void Update(float dt)
 		{
-			Game.Instance.Camera.Pan(2, 2);
+			//Game.Instance.Camera.Pan(2, 2);
 		}
 
 		public void Render(float dt)
@@ -87,6 +87,7 @@ namespace CCEngine.Simulation
 			map.RenderGround(batch, cellBounds, screenTopLeft);
 
 			batch.SetBlending(true);
+			// TODO: Render smudges.
 			// TODO: Render overlays.
 			// TODO: Render units.
 			// TODO: Render buildings.
@@ -103,7 +104,7 @@ namespace CCEngine.Simulation
 		{
 			var theaters = new Dictionary<string, Theater>();
 			
-			var tmplist = ini.GetSection("Templates").ToDictionary(
+			var tmplist = ini.EnumerateSection("Templates").ToDictionary(
 				x => ushort.Parse(x.Key),
 				x => x.Value.ToUpperInvariant()
 			);
@@ -111,6 +112,7 @@ namespace CCEngine.Simulation
 			var trnlist = ini.GetSectionValues("Terrains").ToArray();
 
 			var palette_cps = assets.Load<Sprite>("palette.cps", false);
+
 			foreach (var id in ini.GetSectionValues("Theaters"))
 			{
 				var name = ini.GetString(id, "Name");

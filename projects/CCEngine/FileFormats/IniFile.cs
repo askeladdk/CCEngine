@@ -32,33 +32,49 @@ namespace CCEngine.FileFormats
 		public bool Contains(string section, string key)
 		{
 			IniSection sec;
-			if (sections.TryGetValue(section, out sec))
-				return sec.Contains(key);
-			return false;
+			return sections.TryGetValue(section, out sec)
+				? sec.Contains(key)
+				: false;
 		}
 
-		public IEnumerable<KeyValuePair<string, string>> GetSection(string section)
+		public int Count(string section)
 		{
 			IniSection sec;
-			if (sections.TryGetValue(section, out sec))
-				return sec;
-			return null;
+			return sections.TryGetValue(section, out sec)
+				? sec.Count
+				: 0;
+		}
+
+		public string GetAt(string section, int index, string otherwise = null)
+		{
+			IniSection sec;
+			return sections.TryGetValue(section, out sec)
+				? sec.GetAt(index)
+				: otherwise;
+		}
+
+		public IEnumerable<KeyValuePair<string, string>> EnumerateSection(string section)
+		{
+			IniSection sec;
+			return sections.TryGetValue(section, out sec)
+				? sec
+				: null;
 		}
 
 		public ICollection<string> GetSectionKeys(string section)
 		{
 			IniSection sec;
-			if (sections.TryGetValue(section, out sec))
-				return sec.Keys;
-			return null;
+			return sections.TryGetValue(section, out sec)
+				? sec.Keys
+				: null;
 		}
 
 		public ICollection<string> GetSectionValues(string section)
 		{
 			IniSection sec;
-			if (sections.TryGetValue(section, out sec))
-				return sec.Values;
-			return null;
+			return sections.TryGetValue(section, out sec)
+				? sec.Values
+				: null;
 		}
 
 		public string GetString(string section, string key, string otherwise = null)

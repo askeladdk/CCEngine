@@ -48,9 +48,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Simulation\Entity.cs" />
     <Compile Include="Collections\OrderedDictionary.cs" />
     <Compile Include="Rendering\FrameBuffer.cs" />
-    <Compile Include="Simulation\CellCoord.cs" />
+    <Compile Include="PointExt.cs" />
     <Compile Include="Simulation\Map.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="FileFormats\IniFile.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="MessageBus.cs" />
     <Compile Include="Rendering\SpriteBatch.cs" />
     <Compile Include="Camera.cs" />
+    <Compile Include="Simulation\Foundation.cs" />
     <Compile Include="Simulation\Theater.cs" />
     <Compile Include="VFS\VFS.cs" />
     <Compile Include="VFS\VFSFolder.cs" />

@@ -29,6 +29,7 @@ namespace CCEngine
 		// Simulation
 		private uint globalClock = 0;
 		private World world;
+		private EntityRegistry entityRegistry = new EntityRegistry();
 
 		// Misc
 		private static Game instance;
@@ -40,6 +41,7 @@ namespace CCEngine
 
 		public uint GlobalClock { get { return this.globalClock; } }
 		public World World { get { return this.world; } }
+		public EntityRegistry EntityRegistry { get { return this.entityRegistry; } }
 
 		public VFS.VFS VFS { get { return this.vfs; } }
 		public Matrix4 Projection { get { return this.projection; } }
@@ -118,6 +120,12 @@ namespace CCEngine
 			this.SendMessage(new MsgKeyDown(e));
 		}
 
+		protected override void OnMouseMove(OpenTK.Input.MouseMoveEventArgs e)
+		{
+			base.OnMouseMove(e);
+			this.SendMessage(new MsgMouseMove(e));
+		}
+
 		public void SendMessage(IMessage message)
 		{
 			this.bus.SendMessage(message);
@@ -173,7 +181,18 @@ namespace CCEngine
 
 		static void Main(string[] args)
 		{
-			using (Game g = new Game(640, 480, GameWindowFlags.FixedWindow, VSyncMode.Adaptive))
+			IniFile config = null;
+
+			using(var stream = new StreamReader("ccengine.ini"))
+				config = IniFile.Read(stream.BaseStream);
+
+			int screenw = config.GetInt("Video", "Width", 640);
+			int screenh = config.GetInt("Video", "Height", 480);
+			var wflag = config.GetBool("Video", "Fullscreen", false)
+				? GameWindowFlags.Fullscreen
+				: GameWindowFlags.FixedWindow;
+
+			using (Game g = new Game(screenw, screenh, wflag, VSyncMode.Adaptive))
 			{
 				// Log some OpenGL stats
 				g.Log(2, GL.GetString(StringName.Vendor));
@@ -183,16 +202,12 @@ namespace CCEngine
 				g.Log(2, "Maximum Texture Size {0}x{0}", GL.GetInteger(GetPName.MaxTextureSize));
 
 				// Load the virtual file system.
-				using(var stream = new StreamReader("ccengine.ini"))
-				{
-					var ini = IniFile.Read(stream.BaseStream);
-					var roots = ini.GetString("CCEngine", "Roots").Split(',');
-					var mixver = (MixFileVersion)ini.GetInt("CCEngine", "MixVersion");
-					foreach(var root in roots)
-						g.VFS.AddRoot(Path.GetFullPath(root));
-					foreach (var mixfile in ini.GetSectionValues("LoadOrder"))
-						g.VFS.AddMix(mixfile, mixver);
-				}
+				var roots = config.GetString("CCEngine", "Roots").Split(',');
+				var mixver = (MixFileVersion)config.GetInt("CCEngine", "MixVersion");
+				foreach(var root in roots)
+					g.VFS.AddRoot(Path.GetFullPath(root));
+				foreach (var mixfile in config.GetSectionValues("LoadOrder"))
+					g.VFS.AddMix(mixfile, mixver);
 
 				// Load initial assets.
 				g.Initialize();

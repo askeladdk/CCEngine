@@ -8,9 +8,7 @@ namespace CCEngine
 	{
 		private Rectangle viewPort = new Rectangle(); // viewable area in screen space
 		private Point topLeft = new Point();  // top left in map space
-
-		// map coordinates
-		private Rectangle mapBounds;
+		private Rectangle mapBounds = new Rectangle();
 
 		public Point TopLeft { get { return topLeft; } }
 
@@ -39,8 +37,10 @@ namespace CCEngine
 
 		public void SetTopLeft(int mapX, int mapY)
 		{
-			topLeft.X = Helpers.Clamp(mapX, mapBounds.Left, mapBounds.Right - viewPort.Width);
-			topLeft.Y = Helpers.Clamp(mapY, mapBounds.Top, mapBounds.Bottom - viewPort.Height);
+			topLeft = new Point(
+				Helpers.Clamp(mapX, mapBounds.Left, mapBounds.Right - viewPort.Width),
+				Helpers.Clamp(mapY, mapBounds.Top, mapBounds.Bottom - viewPort.Height)
+			);
 		}
 
 		public void SetTopLeft(Point coord)
@@ -48,22 +48,17 @@ namespace CCEngine
 			SetTopLeft(coord.X, coord.Y);
 		}
 
-		public void SetTopLeft(CellCoord coord)
-		{
-			SetTopLeft(coord.ToPoint());
-		}
-
 		/// <summary>
-		/// Center the camera at a cell coordinate.
+		/// Center the camera at map coordinate.
 		/// </summary>
 		/// <param name="coord"></param>
-		public void CenterAt(CellCoord coord)
+		public void CenterAt(Point coord)
 		{
 			var w = viewPort.Width;
 			var h = viewPort.Height;
 			SetTopLeft(
-				coord.X * Constants.TileSize + (Constants.TileSize - w) / 2,
-				coord.Y * Constants.TileSize + (Constants.TileSize - h) / 2
+				coord.X + (Constants.TileSize - w) / 2,
+				coord.Y + (Constants.TileSize - h) / 2
 			);
 		}
 
@@ -93,11 +88,6 @@ namespace CCEngine
 			return MapToScreenCoord(coord.X, coord.Y);
 		}
 
-		public Point MapToScreenCoord(CellCoord coord)
-		{
-			return MapToScreenCoord(coord.ToPoint());
-		}
-
 		/// <summary>
 		/// Calculates which cells are in view and from which screen coordinate rendering should begin.
 		/// </summary>
@@ -124,7 +114,7 @@ namespace CCEngine
 			var b = map.Bounds;
 			var t = Constants.TileSize;
 			mapBounds = new Rectangle(t * b.X, t * b.Y, t * b.Width, t * b.Height);
-			SetTopLeft(new CellCoord(b.Location.X, b.Location.Y));
+			SetTopLeft(PointExt.FromCell(b.Location.X, b.Location.Y));
 		}
 	}
 }

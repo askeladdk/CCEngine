@@ -23,12 +23,27 @@ namespace CCEngine.Logic
 		public void HandleMessage(IMessage message)
 		{
 			MsgKeyDown msgk;
+			MsgMouseMove mouse;
 			if(message.Is<MsgKeyDown>(out msgk))
 			{
 				if(msgk.e.Key == OpenTK.Input.Key.Escape)
 				{
 					Game.Instance.SetState(0);
 				}
+
+				if (msgk.e.Key == OpenTK.Input.Key.Right)
+					Game.Instance.Camera.Pan(8, 0);
+				else if (msgk.e.Key == OpenTK.Input.Key.Left)
+					Game.Instance.Camera.Pan(-8, 0);
+				else if (msgk.e.Key == OpenTK.Input.Key.Up)
+					Game.Instance.Camera.Pan(0, -8);
+				else if (msgk.e.Key == OpenTK.Input.Key.Down)
+					Game.Instance.Camera.Pan(0, 8);
+			}
+			else if(message.Is<MsgMouseMove>(out mouse))
+			{
+				var mousecell = Game.Instance.Camera.ScreenToMapCoord(mouse.e.Position);
+				Game.Instance.World.Map.CellHighLight = mousecell;
 			}
 		}
 
@@ -40,7 +55,6 @@ namespace CCEngine.Logic
 
 		public void Hide()
 		{
-
 		}
 
 		public void Update(float dt)

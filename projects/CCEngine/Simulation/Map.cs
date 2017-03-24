@@ -16,9 +16,9 @@ namespace CCEngine.Simulation
 	{
 		public readonly ushort TmpId;
 		public readonly byte TmpIndex;
-		public readonly TerrainTypes TerrainType;
+		public readonly TileTypes TerrainType;
 
-		public MapTile(ushort tmpid, byte tmpidx, TerrainTypes type)
+		public MapTile(ushort tmpid, byte tmpidx, TileTypes type)
 		{
 			this.TmpId = tmpid;
 			this.TmpIndex = tmpidx;
@@ -35,12 +35,12 @@ namespace CCEngine.Simulation
 	{
 		private struct MapTerrainObject
 		{
-			public CellCoord cell;
+			public Point position;
 			public TerrainObject obj;
 
 			public MapTerrainObject(ushort cell, TerrainObject obj)
 			{
-				this.cell = new CellCoord(cell);
+				this.position = PointExt.FromCellId(cell);
 				this.obj = obj;
 			}
 		}
@@ -50,8 +50,11 @@ namespace CCEngine.Simulation
 		private readonly Theater theater;
 		private MapTerrainObject[] terrains;
 
+		private Point cellHighlight = new Point(0, 0);
+
 		public Rectangle Bounds { get { return bounds; } }
 		public Theater Theater { get { return theater; } }
+		public Point CellHighLight { set { this.cellHighlight = value.ToCell(); } }
 		
 		public MapTile GetTile(int x, int y)
 		{
@@ -66,6 +69,8 @@ namespace CCEngine.Simulation
 			this.terrains = terrains;
 		}
 
+		#region Rendering
+
 		public void RenderGround(SpriteBatch batch, Rectangle cellBounds, Point screenTopLeft)
 		{
 			batch.SetBlending(false);
@@ -76,9 +81,14 @@ namespace CCEngine.Simulation
 				for (int x = cellBounds.Left; x < cellBounds.Right; x++)
 				{
 					var tile = this.GetTile(x, y);
+					bool highlight = (x == this.cellHighlight.X && y == this.cellHighlight.Y);
+					if (highlight)
+						batch.SetColor(OpenTK.Graphics.Color4.Red);
 					batch
 						.SetSprite(this.theater.GetTemplate(tile.TmpId))
 						.Render(tile.TmpIndex, 0, screenX, screenY);
+					if (highlight)
+						batch.SetColor();
 					screenX += Constants.TileSize;
 				}
 				screenY += Constants.TileSize;
@@ -89,17 +99,19 @@ namespace CCEngine.Simulation
 		{
 			var terrains =
 				from t in this.terrains
-				where objectBounds.Contains(t.cell.X, t.cell.Y)
+				where objectBounds.Contains(t.position.ToCell())
 				select t;
 
 			foreach(var t in terrains)
 			{
-				var p = camera.MapToScreenCoord(t.cell);
+				var p = camera.MapToScreenCoord(t.position);
 				batch
 					.SetSprite(t.obj.Sprite)
 					.Render(0, 0, p.X, p.Y);
 			}
 		}
+
+		#endregion
 
 		#region Map Loading
 
@@ -144,12 +156,13 @@ namespace CCEngine.Simulation
 				byte tmpidx  = mapdata[2 * Constants.MapCells + i];
 				//byte ovridx  = mapdata[3 * Constants.MapCells + i];
 				var tmp = theater.GetTemplate(tmpid);
-				if (tmpid == 0 || tmp == null)
+				// Replace invalid tiles with the clear tile.
+				if (tmpid == 0 || tmp == null || tmpidx >= tmp.FrameCount)
 				{
 					tmpid = 255;
 					tmp = theater.GetTemplate(tmpid);
 				}
-				if (tmpid == 1 || tmpid == 255)
+				if (tmpid == 255)
 					tmpidx = (byte)rng.Next(tmp.FrameCount);
 				var type = tmp.GetTerrainType(tmpidx);
 				cells[i] = new MapTile(tmpid, tmpidx, type);
@@ -158,10 +171,10 @@ namespace CCEngine.Simulation
 			return cells;
 		}
 
-		private static MapTerrainObject[] ReadTerrains(IniFile ini, Theater theater)
+		private static MapTerrainObject[] ReadTerrains(World w, IniFile ini, Theater theater)
 		{
 			var terrains = new List<MapTerrainObject>();
-			foreach(var kv in ini.GetSection("TERRAIN"))
+			foreach(var kv in ini.EnumerateSection("TERRAIN"))
 			{
 				var cell = ushort.Parse(kv.Key);
 				var obj = theater.GetTerrainObject(kv.Value);
@@ -169,12 +182,13 @@ namespace CCEngine.Simulation
 					terrains.Add(new MapTerrainObject(cell, obj));
 			}
 			var arr = terrains.ToArray();
-			Array.Sort(arr, (a, b) => a.cell.CellId - b.cell.CellId);
+			Array.Sort(arr, (a, b) => a.position.CellId() - b.position.CellId());
 			return arr;
 		}
 
 		public static Map Read(Stream stream, AssetManager assets, MapParameters parameters)
 		{
+			var w = parameters.world;
 			var ini = IniFile.Read(stream);
 
 			// Read Map section.
@@ -185,12 +199,12 @@ namespace CCEngine.Simulation
 			Rectangle bounds = new Rectangle(mapx, mapy, mapw, maph);
 
 			var theater_name = ini.GetString("Map", "Theater");
-			var theater = parameters.world.GetTheater(theater_name);
+			var theater = w.GetTheater(theater_name);
 			if (theater == null)
 				throw new Exception("Invalid theater {0}".F(theater_name));
 
 			var tiles = ReadTiles(ini, theater);
-			var terrains = ReadTerrains(ini, theater);
+			var terrains = ReadTerrains(w, ini, theater);
 
 			return new Map(tiles, bounds, theater, terrains);
 		}

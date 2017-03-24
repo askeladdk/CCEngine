@@ -57,4 +57,55 @@ namespace CCEngine
 			return "Goto state {0}".F(this.state);
 		}
 	}
+
+	public class MsgMouseMove : IMessage
+	{
+		public MouseMoveEventArgs e;
+		
+		public int LogLevel { get { return Logger.NEVER; } }
+
+		public MsgMouseMove(MouseMoveEventArgs e)
+		{
+			this.e = e;
+		}
+
+		public override string ToString()
+		{
+			return "Mouse position ({0}, {1})".F(e.X, e.Y);
+		}
+	}
+
+	public class MsgSpawnEntity : IMessage
+	{
+		public int entityId;
+
+		public int LogLevel { get { return Logger.DEBUG; } }
+
+		public MsgSpawnEntity(int entityId)
+		{
+			this.entityId = entityId;
+		}
+
+		public override string ToString()
+		{
+			return "Spawn entity #{0}".F(entityId);
+		}
+	}
+
+	public class MsgKillEntity : IMessage
+	{
+		public int entityId;
+
+		public int LogLevel { get { return Logger.DEBUG; } }
+
+		public MsgKillEntity(int entityId)
+		{
+			this.entityId = entityId;
+		}
+
+		public override string ToString()
+		{
+			return "Kill entity #{0}".F(entityId);
+		}
+	}
 }

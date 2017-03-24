@@ -9,6 +9,7 @@ namespace CCEngine
 		public const int WARN  = 1;
 		public const int INFO  = 2;
 		public const int DEBUG = 3;
+		public const int NEVER = 4;
 
 		private static readonly string[] prefix =
 		{
