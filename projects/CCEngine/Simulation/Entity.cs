@@ -69,7 +69,7 @@ namespace CCEngine.Simulation
 			}
 			else if (msg.Is(out msgKill))
 			{
-				entities.Remove(msgSpawn.entityId);
+				entities.Remove(msgKill.entityId);
 			}
 			else
 			{
