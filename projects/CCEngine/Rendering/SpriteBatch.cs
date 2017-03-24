@@ -116,6 +116,8 @@ namespace CCEngine.Rendering
 
 			return prog_default;
 		}
+
+		public const int White = unchecked((int)0xffffffff);
 		
 		private SpriteInstance[] batch;
 		private VertexArrayObject vao;
@@ -123,7 +125,7 @@ namespace CCEngine.Rendering
 		private ShaderProgram program;
 		private Palette palette;
 		private Sprite sprite;
-		private int color = unchecked((int)0xffffffff);
+		private int color = SpriteBatch.White;
 		private int count = 0;
 		private int render_calls = 0;
 		private int render_calls_total = 0;
@@ -285,13 +287,22 @@ namespace CCEngine.Rendering
 			return this;
 		}
 
+		public SpriteBatch SetColor(int argb)
+		{
+			if (this.color != argb)
+				Flush();
+			this.color = argb;
+			return this;
+		}
+
 		public SpriteBatch SetColor(Color4 color)
 		{
-			int a = color.ToArgb();
-			if (this.color != a)
-				Flush();
-			this.color = a;
-			return this;
+			return this.SetColor(color.ToArgb());
+		}
+
+		public SpriteBatch SetColor()
+		{
+			return this.SetColor(SpriteBatch.White);
 		}
 	}
 }
