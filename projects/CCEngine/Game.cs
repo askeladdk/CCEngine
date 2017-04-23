@@ -13,7 +13,7 @@ using CCEngine.Collections;
 
 namespace CCEngine
 {
-	public class Game : GameWindow
+	public partial class Game : GameWindow
 	{
 		// Asset management
 		private VFS.VFS vfs;
@@ -27,9 +27,8 @@ namespace CCEngine
 		private Logic.GameLogic logic;
 
 		// Simulation
-		private uint globalClock = 0;
-		private World world;
-		private EntityRegistry entityRegistry = new EntityRegistry();
+		private int globalClock = 0;
+		private Map map;
 
 		// Misc
 		private static Game instance;
@@ -39,9 +38,8 @@ namespace CCEngine
 
 		public static Game Instance { get { return instance; } }
 
-		public uint GlobalClock { get { return this.globalClock; } }
-		public World World { get { return this.world; } }
-		public EntityRegistry EntityRegistry { get { return this.entityRegistry; } }
+		public int GlobalClock { get { return this.globalClock; } }
+		public Map Map { get { return this.map; } }
 
 		public VFS.VFS VFS { get { return this.vfs; } }
 		public Matrix4 Projection { get { return this.projection; } }
@@ -58,12 +56,13 @@ namespace CCEngine
 			this.vfs = new VFS.VFS();
 			// Set up the asset loader.
 			this.assets = new AssetManager(this.vfs);
+			this.assets.RegisterLoader<IniFile>(new IniLoader());
 			this.assets.RegisterLoader<Shader>(new ShaderLoader());
 			this.assets.RegisterLoader<Palette>(new PaletteLoader());
 			this.assets.RegisterLoader<Sprite>(new SpriteLoader());
 			this.assets.RegisterLoader<TmpFile>(new TmpLoader());
 			this.assets.RegisterLoader<Map>(new MapLoader());
-			this.assets.RegisterLoader<World>(new WorldLoader());
+			//this.assets.RegisterLoader<World>(new WorldLoader());
 
 			this.logger = new Logger(this, Logger.DEBUG);
 			this.logic = new Logic.GameLogic(this);
@@ -71,10 +70,11 @@ namespace CCEngine
 			this.bus.Subscribe(this.logic);
 		}
 
-		public void Initialize()
+		public void Initialise()
 		{
 			this.batch = new SpriteBatch(4096);
-			this.world = LoadAsset<World>("world.ini");
+			this.SetRules();
+			this.LoadWorldData();
 		}
 
 		protected override void OnLoad(EventArgs e)
@@ -179,9 +179,15 @@ namespace CCEngine
 			this.SendMessage(new MsgGotoState(state));
 		}
 
+		public void LoadMap(string mapfile)
+		{
+			this.map = assets.Load<Map>(mapfile, false);
+			this.camera.SetBounds(this.map);
+		}
+
 		static void Main(string[] args)
 		{
-			IniFile config = null;
+			IConfiguration config = null;
 
 			using(var stream = new StreamReader("ccengine.ini"))
 				config = IniFile.Read(stream.BaseStream);
@@ -206,11 +212,11 @@ namespace CCEngine
 				var mixver = (MixFileVersion)config.GetInt("CCEngine", "MixVersion");
 				foreach(var root in roots)
 					g.VFS.AddRoot(Path.GetFullPath(root));
-				foreach (var mixfile in config.GetSectionValues("LoadOrder"))
-					g.VFS.AddMix(mixfile, mixver);
+				foreach (var mixfile in config.Enumerate("LoadOrder"))
+					g.VFS.AddMix(mixfile.Value, mixver);
 
 				// Load initial assets.
-				g.Initialize();
+				g.Initialise();
 
 				// Start the game!
 				g.SetState(1);

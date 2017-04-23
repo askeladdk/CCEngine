@@ -7,6 +7,7 @@ using CCEngine.Codecs;
 using CCEngine.FileFormats;
 using CCEngine.Collections;
 using CCEngine.Rendering;
+using CCEngine.ECS;
 using OpenTK.Graphics.OpenGL;
 
 namespace CCEngine.Simulation
@@ -33,6 +34,7 @@ namespace CCEngine.Simulation
 
 	public class Map
 	{
+#if false
 		private struct MapTerrainObject
 		{
 			public Point position;
@@ -44,32 +46,104 @@ namespace CCEngine.Simulation
 				this.obj = obj;
 			}
 		}
+#endif
 
 		private readonly MapTile[] tiles;
 		private readonly Rectangle bounds;
 		private readonly Theater theater;
-		private MapTerrainObject[] terrains;
+		private Registry registry;
 
-		private Point cellHighlight = new Point(0, 0);
+		private Rectangle objectBounds;
+		private CPos cellHighlight = new CPos(0, 0);
 
 		public Rectangle Bounds { get { return bounds; } }
 		public Theater Theater { get { return theater; } }
-		public Point CellHighLight { set { this.cellHighlight = value.ToCell(); } }
-		
+		public MPos CellHighLight { set { this.cellHighlight = value.ToCPos(); } }
+
+
+		private Map(IConfiguration cfg)
+		{
+			this.registry = CreateRegistry();
+			var theaterid = cfg.GetString("Map", "Theater");
+			this.theater = Game.Instance.GetTheater(theaterid);
+			this.bounds = ReadBounds(cfg);
+			this.tiles = ReadTiles(cfg);
+			SpawnTerrains(cfg);
+		}
+
+		private Rectangle ReadBounds(IConfiguration cfg)
+		{
+			int mapx = cfg.GetInt("Map", "X");
+			int mapy = cfg.GetInt("Map", "Y");
+			int mapw = cfg.GetInt("Map", "Width");
+			int maph = cfg.GetInt("Map", "Height");
+			return new Rectangle(mapx, mapy, mapw, maph);
+		}
+
+		/// <summary>
+		/// Create registry and attach processors.
+		/// </summary>
+		/// <returns></returns>
+		private Registry CreateRegistry()
+		{
+			var registry = new Registry();
+			PAnimation.Attach(registry);
+			PRender.Attach(registry);
+			return registry;
+		}
+
 		public MapTile GetTile(int x, int y)
 		{
 			return tiles[y * Constants.MapSize + x];
 		}
 
-		private Map(MapTile[] tiles, Rectangle bounds, Theater theater, MapTerrainObject[] terrains)
+		public void Update(float dt)
 		{
-			this.tiles = tiles;
-			this.bounds = bounds;
-			this.theater = theater;
-			this.terrains = terrains;
+			this.registry.Update(dt);
 		}
 
 		#region Rendering
+
+		public Rectangle ObjectBounds
+		{
+			get { return this.objectBounds; }
+		}
+
+		public void Render(float dt)
+		{
+			var batch = Game.Instance.SpriteBatch;
+			batch.SetPalette(this.theater.Palette);
+
+			// Calculate viewable map area.
+			Point screenTopLeft;
+			Rectangle cellBounds;
+			Game.Instance.Camera.GetRenderArea(out screenTopLeft, out cellBounds);
+
+			// Only render objects that are within this map pixel rectangle.
+			this.objectBounds = new Rectangle(
+				Constants.TileSize * Math.Max(0, cellBounds.X - 1),
+				Constants.TileSize * Math.Max(0, cellBounds.Y - 1),
+				Constants.TileSize * Math.Min(cellBounds.Width + 1, Constants.MapSize),
+				Constants.TileSize * Math.Min(cellBounds.Height + 1, Constants.MapSize)
+			);
+
+			// Crop rendering to HUD camera area.
+			Game.Instance.ScissorCamera();
+			GL.Enable(EnableCap.ScissorTest);
+
+			// Render ground layer.
+			batch.SetBlending(false);
+			this.RenderGround(batch, cellBounds, screenTopLeft);
+
+			// Render entities.
+			batch.SetBlending(true);
+			this.registry.Render(dt);
+
+			// Finish up.
+			batch.Flush();
+			batch.SetBlending(false);
+			GL.Disable(EnableCap.ScissorTest);
+		}
 
 		public void RenderGround(SpriteBatch batch, Rectangle cellBounds, Point screenTopLeft)
 		{
@@ -95,6 +169,7 @@ namespace CCEngine.Simulation
 			}
 		}
 
+#if false
 		public void RenderTerrain(SpriteBatch batch, Rectangle objectBounds, Camera camera)
 		{
 			var terrains =
@@ -110,16 +185,17 @@ namespace CCEngine.Simulation
 					.Render(0, 0, p.X, p.Y);
 			}
 		}
+#endif
 
 		#endregion
 
 		#region Map Loading
 
-		private static void UnpackSection(IniFile ini, string section, byte[] buffer, int ofs, int len)
+		private void UnpackSection(IConfiguration cfg, string section, byte[] buffer, int ofs, int len)
 		{
-			if (!ini.Contains(section))
+			if (!cfg.Contains(section))
 				throw new Exception("[{0}] missing".F(section));
-			var sb = string.Join(string.Empty, ini.GetSectionValues(section));
+			var sb = string.Join(string.Empty, cfg.Enumerate(section).Select(x => x.Value));
 			var bin = Convert.FromBase64String(sb);
 
 			using (var br = new BinaryReader(new MemoryStream(bin)))
@@ -136,12 +212,13 @@ namespace CCEngine.Simulation
 			}
 		}
 
-		private static MapTile[] ReadTiles(IniFile ini, Theater theater)
+		private MapTile[] ReadTiles(IConfiguration cfg)
 		{
+			var theater = this.theater;
 			byte[] mapdata = new byte[4 * Constants.MapCells];
 
-			UnpackSection(ini, "MapPack", mapdata, 0, 3 * Constants.MapCells);
-			UnpackSection(ini, "OverlayPack", mapdata, 3 * Constants.MapCells, Constants.MapCells);
+			UnpackSection(cfg, "MapPack", mapdata, 0, 3 * Constants.MapCells);
+			UnpackSection(cfg, "OverlayPack", mapdata, 3 * Constants.MapCells, Constants.MapCells);
 
 			var rng = new Random(0);
 			var cells = new MapTile[Constants.MapCells];
@@ -171,50 +248,50 @@ namespace CCEngine.Simulation
 			return cells;
 		}
 
-		private static MapTerrainObject[] ReadTerrains(World w, IniFile ini, Theater theater)
+		private void SpawnTerrains(IConfiguration cfg)
 		{
-			var terrains = new List<MapTerrainObject>();
-			foreach(var kv in ini.EnumerateSection("TERRAIN"))
+			foreach(var kv in cfg.Enumerate("TERRAIN"))
 			{
 				var cell = ushort.Parse(kv.Key);
-				var obj = theater.GetTerrainObject(kv.Value);
-				if(obj != null)
-					terrains.Add(new MapTerrainObject(cell, obj));
+				var trnId = kv.Value;
+
+				var bp = Game.Instance.GetTerrainType(trnId, this.theater);
+				if(bp != null)
+				{
+					var attrs = new AttributeTable
+					{
+						{"Pose.Cell", new CPos(cell)},
+					};
+					this.registry.Spawn(bp, attrs);
+				}
 			}
-			var arr = terrains.ToArray();
-			Array.Sort(arr, (a, b) => a.position.CellId() - b.position.CellId());
-			return arr;
 		}
 
-		public static Map Read(Stream stream, AssetManager assets, MapParameters parameters)
+		public static Map Read(Stream stream, AssetManager assets)
 		{
-			var w = parameters.world;
-			var ini = IniFile.Read(stream);
-
+			var cfg = IniFile.Read(stream);
+			return new Map(cfg);
+#if false
 			// Read Map section.
-			int mapx = ini.GetInt("Map", "X");
-			int mapy = ini.GetInt("Map", "Y");
-			int mapw = ini.GetInt("Map", "Width");
-			int maph = ini.GetInt("Map", "Height");
+			int mapx = cfg.GetInt("Map", "X");
+			int mapy = cfg.GetInt("Map", "Y");
+			int mapw = cfg.GetInt("Map", "Width");
+			int maph = cfg.GetInt("Map", "Height");
 			Rectangle bounds = new Rectangle(mapx, mapy, mapw, maph);
 
-			var theater_name = ini.GetString("Map", "Theater");
+			var theater_name = cfg.GetString("Map", "Theater");
 			var theater = w.GetTheater(theater_name);
 			if (theater == null)
 				throw new Exception("Invalid theater {0}".F(theater_name));
 
-			var tiles = ReadTiles(ini, theater);
-			var terrains = ReadTerrains(w, ini, theater);
+			var tiles = ReadTiles(cfg, theater);
+			var terrains = ReadTerrains(w, cfg, theater);
 
 			return new Map(tiles, bounds, theater, terrains);
-		}
+#endif
+			}
 
 		#endregion
-	}
-
-	public class MapParameters
-	{
-		public World world;
 	}
 
 	public class MapLoader : IAssetLoader
@@ -222,7 +299,7 @@ namespace CCEngine.Simulation
 		public object Load(AssetManager assets, VFS.VFSHandle handle, object parameters)
 		{
 			using(var stream = handle.Open())
-				return Map.Read(stream, assets, (MapParameters)parameters);
+				return Map.Read(stream, assets);
 		}
 	}
 }

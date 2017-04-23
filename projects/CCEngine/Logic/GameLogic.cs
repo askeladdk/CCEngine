@@ -18,7 +18,7 @@ namespace CCEngine.Logic
 		{
 		}
 
-		public void HandleMessage(IMessage msg)
+		public void OnMessage(IMessage msg)
 		{
 			MsgGotoState gostate;
 			if(msg.Is<MsgGotoState>(out gostate))

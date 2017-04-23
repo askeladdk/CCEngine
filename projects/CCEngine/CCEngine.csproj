@@ -48,10 +48,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Simulation\Entity.cs" />
+    <Compile Include="Configuration.cs" />
+    <Compile Include="ECS\Blueprint.cs" />
+    <Compile Include="ECS\AttributeTable.cs" />
+    <Compile Include="ECS\Error.cs" />
+    <Compile Include="ECS\Processor.cs" />
+    <Compile Include="ECS\Registry.cs" />
+    <Compile Include="GameRules.cs" />
+    <Compile Include="Rendering\Sequence.cs" />
     <Compile Include="Collections\OrderedDictionary.cs" />
     <Compile Include="Rendering\FrameBuffer.cs" />
-    <Compile Include="PointExt.cs" />
+    <Compile Include="CPos.cs" />
+    <Compile Include="Simulation\Components.cs" />
+    <Compile Include="Simulation\Processors.cs" />
+    <Compile Include="Simulation\SpriteArt.cs" />
     <Compile Include="Simulation\Map.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="FileFormats\IniFile.cs" />
@@ -90,10 +100,10 @@
     <Compile Include="Camera.cs" />
     <Compile Include="Simulation\Foundation.cs" />
     <Compile Include="Simulation\Theater.cs" />
+    <Compile Include="MPos.cs" />
     <Compile Include="VFS\VFS.cs" />
     <Compile Include="VFS\VFSFolder.cs" />
     <Compile Include="VFS\VFSHandle.cs" />
-    <Compile Include="Simulation\World.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\data\frag.glsl">

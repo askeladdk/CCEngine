@@ -17,7 +17,7 @@ namespace CCEngine.Logic
 		{
 			initialized = true;
 			this.sprite = Game.Instance.LoadAsset<Sprite>("ctnk.shp");
-			Game.Instance.World.LoadMap("scg01ea.ini");
+			Game.Instance.LoadMap("scg01ea.ini");
 		}
 
 		public void HandleMessage(IMessage message)
@@ -43,7 +43,7 @@ namespace CCEngine.Logic
 			else if(message.Is<MsgMouseMove>(out mouse))
 			{
 				var mousecell = Game.Instance.Camera.ScreenToMapCoord(mouse.e.Position);
-				Game.Instance.World.Map.CellHighLight = mousecell;
+				Game.Instance.Map.CellHighLight = mousecell;
 			}
 		}
 
@@ -59,19 +59,19 @@ namespace CCEngine.Logic
 
 		public void Update(float dt)
 		{
-			Game.Instance.World.Update(dt);
+			Game.Instance.Map.Update(dt);
 		}
 
 		public void Render(float dt)
 		{
-			uint tick = Game.Instance.GlobalClock;
+			int tick = Game.Instance.GlobalClock;
 			//GL.Enable(EnableCap.Blend);
 			//GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
 
 			var batch = Game.Instance.SpriteBatch;
 
 			batch.Begin();
-			Game.Instance.World.Render(dt);
+			Game.Instance.Map.Render(dt);
 			batch.End();
 
 			/*for (int i = 0; i < 10; i++)

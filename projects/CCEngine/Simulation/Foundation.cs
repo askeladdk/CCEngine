@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using CCEngine.FileFormats;
 
@@ -20,9 +21,9 @@ namespace CCEngine.Simulation
 			return this.occupied[y, x];
 		}
 
-		public Foundation(IniFile ini, string section)
+		public Foundation(IConfiguration ini, string section)
 		{
-			int h = ini.Count(section);
+			int h = ini.Enumerate(section).Count();
 			int w = ini.GetString(section, "0", string.Empty).Length;
 
 			if (h == 0 || w == 0)

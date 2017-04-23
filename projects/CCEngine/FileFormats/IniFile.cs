@@ -7,79 +7,42 @@ using CCEngine.Collections;
 
 namespace CCEngine.FileFormats
 {
-	using IniSection = OrderedDictionary<string, string>;
-	using IniDictionary = Dictionary<string, OrderedDictionary<string, string>>;
+	using IniDict = OrderedDictionary<string, string>;
+	using SectionDict = Dictionary<string, OrderedDictionary<string, string>>;
 
-	public class IniFile
+	public class IniFile : AbstractConfiguration
 	{
-		private readonly IniDictionary sections;
+		private readonly SectionDict sections;
 
-		private IniFile(IniDictionary sections)
+		private IniFile(SectionDict sections)
 		{
 			this.sections = sections;
 		}
 
-		public ICollection<string> Sections
-		{
-			get { return sections.Keys; }
-		}
-
-		public bool Contains(string section)
+		public override bool Contains(string section)
 		{
 			return sections.ContainsKey(section);
 		}
 
-		public bool Contains(string section, string key)
+		public override bool Contains(string section, string key)
 		{
-			IniSection sec;
+			IniDict sec;
 			return sections.TryGetValue(section, out sec)
 				? sec.Contains(key)
 				: false;
 		}
 
-		public int Count(string section)
+		public override IEnumerable<KeyValuePair<string, string>> Enumerate(string section)
 		{
-			IniSection sec;
-			return sections.TryGetValue(section, out sec)
-				? sec.Count
-				: 0;
-		}
-
-		public string GetAt(string section, int index, string otherwise = null)
-		{
-			IniSection sec;
-			return sections.TryGetValue(section, out sec)
-				? sec.GetAt(index)
-				: otherwise;
-		}
-
-		public IEnumerable<KeyValuePair<string, string>> EnumerateSection(string section)
-		{
-			IniSection sec;
+			IniDict sec;
 			return sections.TryGetValue(section, out sec)
 				? sec
 				: null;
 		}
 
-		public ICollection<string> GetSectionKeys(string section)
+		public override string GetString(string section, string key, string otherwise = null)
 		{
-			IniSection sec;
-			return sections.TryGetValue(section, out sec)
-				? sec.Keys
-				: null;
-		}
-
-		public ICollection<string> GetSectionValues(string section)
-		{
-			IniSection sec;
-			return sections.TryGetValue(section, out sec)
-				? sec.Values
-				: null;
-		}
-
-		public string GetString(string section, string key, string otherwise = null)
-		{
-			IniSection sec;
+			IniDict sec;
 			if (sections.TryGetValue(section, out sec))
 			{
 				string value;
@@ -88,35 +51,11 @@ namespace CCEngine.FileFormats
 			return null;
 		}
 
-		public int GetInt(string section, string key, int otherwise = 0)
-		{
-			int n;
-			return int.TryParse(GetString(section, key), out n) ? n : otherwise;
-		}
-
-		public uint GetUint(string section, string key, uint otherwise = 0)
-		{
-			uint n;
-			return uint.TryParse(GetString(section, key), out n) ? n : otherwise;
-		}
-
-		public float GetFloat(string section, string key, float otherwise = 0.0f)
-		{
-			float n;
-			return float.TryParse(GetString(section, key), out n) ? n : otherwise;
-		}
-
-		public bool GetBool(string section, string key, bool otherwise = false)
-		{
-			string value = GetString(section, key);
-			return value != null ? "1yYtT".IndexOf(value[0]) >= 0 : otherwise;
-		}
-
 		public static IniFile Read(Stream stream)
 		{
 			StreamReader reader = new StreamReader(stream);
-			IniDictionary sections = new IniDictionary();
-			IniSection section = null;
+			SectionDict sections = new SectionDict();
+			IniDict section = null;
 			string key, val, line;
 			int index;
 			string sectionKey = "";

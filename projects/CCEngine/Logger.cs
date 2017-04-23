@@ -26,7 +26,7 @@ namespace CCEngine
 			this.loglevel = Math.Min(loglevel, prefix.Length - 1);
 		}
 
-		public void HandleMessage(IMessage msg)
+		public void OnMessage(IMessage msg)
 		{
 			if (this.loglevel >= msg.LogLevel)
 			{

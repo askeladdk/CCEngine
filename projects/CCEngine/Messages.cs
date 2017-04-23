@@ -88,7 +88,7 @@ namespace CCEngine
 
 		public override string ToString()
 		{
-			return "Spawn entity #{0}".F(entityId);
+			return "Entity #{0} spawned".F(entityId);
 		}
 	}
 
@@ -105,7 +105,7 @@ namespace CCEngine
 
 		public override string ToString()
 		{
-			return "Kill entity #{0}".F(entityId);
+			return "Entity #{0} killed".F(entityId);
 		}
 	}
 }

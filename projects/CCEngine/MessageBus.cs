@@ -10,22 +10,22 @@ namespace CCEngine
 
 	public interface IMessageHandler
 	{
-		void HandleMessage(IMessage message);
+		void OnMessage(IMessage message);
 	}
 
 	public class MessageBus
 	{
-		private readonly HashSet<IMessageHandler> handlers = new HashSet<IMessageHandler>();
 		private readonly Queue<IMessage> queue = new Queue<IMessage>();
+		private event Action<IMessage> OnMessage;
 
 		public void Subscribe(IMessageHandler handler)
 		{
-			this.handlers.Add(handler);
+			this.OnMessage += handler.OnMessage;
 		}
 
 		public void Unsubscribe(IMessageHandler handler)
 		{
-			this.handlers.Remove(handler);
+			this.OnMessage -= handler.OnMessage;
 		}
 
 		public void SendMessage(IMessage message)
@@ -38,9 +38,18 @@ namespace CCEngine
 			while(this.queue.Count > 0)
 			{
 				IMessage m = this.queue.Dequeue();
-				foreach (var h in this.handlers)
-					h.HandleMessage(m);
+				this.OnMessage.Invoke(m);
 			}
+		}
+	}
+
+	public static class MessageExtensions
+	{
+		public static bool Is<T>(this IMessage msgIn, out T msgOut)
+			where T : class, IMessage
+		{
+			msgOut = msgIn as T;
+			return msgOut != null;
 		}
 	}
 }

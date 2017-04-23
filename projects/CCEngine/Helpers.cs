@@ -5,6 +5,8 @@ namespace CCEngine
 {
 	public static class Helpers
 	{
+		public const float PI05 = 0.5f * (float)Math.PI;
+		public const float PI20 = 2.0f * (float)Math.PI;
 
 		public static int SizeOf<T>() where T : struct
 		{
@@ -53,6 +55,18 @@ namespace CCEngine
 		public static float Clamp(float value, float min, float max)
 		{
 			return Math.Min(Math.Max(value, min), max);
+		}
+
+		public static float FacingToOrientation(int facing)
+		{
+			// add 1/2pi because facing 0 = north instead of east.
+			return PI05 + (PI20 * (float)facing) / (float)Constants.Facings;
+		}
+
+		public static int OrientationToFacing(float orientation)
+		{
+			// subtract 1/2pi because facing 0 = north instead of east.
+			return (int)(Constants.Facings * (orientation - PI05) / PI20) % Constants.Facings;
 		}
 	}
 }

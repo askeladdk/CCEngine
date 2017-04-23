@@ -195,14 +195,12 @@ namespace CCEngine.Rendering
 		public object Load(AssetManager assets, VFS.VFSHandle handle, object parameters)
 		{
 			string filename = handle.FileName;
-			if (filename.EndsWith(".CPS"))
-				using (var stream = handle.Open())
+			using (var stream = handle.Open())
+				if (filename.EndsWith(".CPS"))
 					return CpsFile.Read(stream);
-			else if (filename.EndsWith(".PCX"))
-				using (var stream = handle.Open())
+				else if (filename.EndsWith(".PCX"))
 					return PcxFile.Read(stream);
-			else
-				using (var stream = handle.Open())
+				else
 					return ShpFile.Read(stream);
 		}
 	}

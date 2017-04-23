@@ -43,22 +43,17 @@ namespace CCEngine
 			);
 		}
 
-		public void SetTopLeft(Point coord)
-		{
-			SetTopLeft(coord.X, coord.Y);
-		}
-
 		/// <summary>
 		/// Center the camera at map coordinate.
 		/// </summary>
-		/// <param name="coord"></param>
-		public void CenterAt(Point coord)
+		/// <param name="mpos"></param>
+		public void CenterAt(MPos mpos)
 		{
 			var w = viewPort.Width;
 			var h = viewPort.Height;
 			SetTopLeft(
-				coord.X + (Constants.TileSize - w) / 2,
-				coord.Y + (Constants.TileSize - h) / 2
+				mpos.X + (Constants.TileSize - w) / 2,
+				mpos.Y + (Constants.TileSize - h) / 2
 			);
 		}
 
@@ -67,25 +62,37 @@ namespace CCEngine
 			SetTopLeft(topLeft.X + dx, topLeft.Y + dy);
 		}
 
-		public Point ScreenToMapCoord(Point mouse)
+		public MPos ScreenToMapCoord(Point mouse)
 		{
 			if (!viewPort.Contains(mouse))
-				return new Point(-1, -1);
+				return new MPos(-1, -1, 0);
 			int x = mouse.X - viewPort.X + topLeft.X;
 			int y = mouse.Y - viewPort.Y + topLeft.Y;
-			return new Point(x, y);
+			return new MPos(x, y, 0);
 		}
 
-		public Point MapToScreenCoord(int x, int y)
+		public Point MapToScreenCoord(int mapX, int mapY)
 		{
-			int x2 = x - topLeft.X + viewPort.X;
-			int y2 = y - topLeft.Y + viewPort.Y;
+			int x2 = mapX - topLeft.X + viewPort.X;
+			int y2 = mapY - topLeft.Y + viewPort.Y;
 			return new Point(x2, y2);
+		}
+
+		public MPos ScreenToMapCoord(int screenX, int screenY)
+		{
+			int x = screenX + topLeft.X + viewPort.X;
+			int y = screenY + topLeft.Y + viewPort.Y;
+			return new MPos(x, y, 0);
 		}
 
 		public Point MapToScreenCoord(Point coord)
 		{
 			return MapToScreenCoord(coord.X, coord.Y);
+		}
+
+		public Point MapToScreenCoord(MPos mpos)
+		{
+			return MapToScreenCoord(mpos.XProj2D, mpos.YProj2D);
 		}
 
 		/// <summary>
@@ -113,8 +120,18 @@ namespace CCEngine
 		{
 			var b = map.Bounds;
 			var t = Constants.TileSize;
-			mapBounds = new Rectangle(t * b.X, t * b.Y, t * b.Width, t * b.Height);
-			SetTopLeft(PointExt.FromCell(b.Location.X, b.Location.Y));
+
+			mapBounds = new Rectangle(
+				t * b.X,
+				t * b.Y,
+				t * b.Width,
+				t * b.Height
+			);
+
+			SetTopLeft(
+				t * b.Location.X,
+				t * b.Location.Y
+			);
 		}
 	}
 }

@@ -50,13 +50,6 @@ namespace CCEngine
 			return string.Format(fmt, args);
 		}
 
-		public static bool Is<T>(this object obj, out T t)
-			where T : class
-		{
-			t = obj as T;
-			return t != null;
-		}
-
 		public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dict,
 			TKey key, TValue def=default(TValue))
 		{
