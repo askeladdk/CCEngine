@@ -69,6 +69,7 @@ namespace CCEngine.Simulation
 			this.bounds = ReadBounds(cfg);
 			this.tiles = ReadTiles(cfg);
 			SpawnTerrains(cfg);
+			SpawnUnits(cfg);
 		}
 
 		private Rectangle ReadBounds(IConfiguration cfg)
@@ -250,6 +251,8 @@ namespace CCEngine.Simulation
 
 		private void SpawnTerrains(IConfiguration cfg)
 		{
+			// [TERRAINS]
+			// cell=terrainId
 			foreach(var kv in cfg.Enumerate("TERRAIN"))
 			{
 				var cell = ushort.Parse(kv.Key);
@@ -262,6 +265,32 @@ namespace CCEngine.Simulation
 					{
 						{"Pose.Cell", new CPos(cell)},
 					};
+					this.registry.Spawn(bp, attrs);
+				}
+			}
+		}
+
+		private void SpawnUnits(IConfiguration cfg)
+		{
+			// [UNITS]
+			// num=country,type,health,cell,facing,action,trig
+			foreach(var kv in cfg.Enumerate("UNITS"))
+			{
+				var data = kv.Value.Split(',');
+				if (data.Length < 7)
+					continue;
+				var technoId = data[1];
+				var cell = ushort.Parse(data[3]);
+				var facing = int.Parse(data[4]);
+				var bp = Game.Instance.GetUnitType(technoId);
+				if(bp != null)
+				{
+					var attrs = new AttributeTable
+					{
+						{"Pose.Cell", new CPos(cell)},
+						{"Pose.Facing", facing},
+					};
+					Game.Instance.Log(Logger.DEBUG, "Spawn {0}\n{1}", technoId, attrs);
 					this.registry.Spawn(bp, attrs);
 				}
 			}

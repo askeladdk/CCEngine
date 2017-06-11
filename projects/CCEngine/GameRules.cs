@@ -57,8 +57,7 @@ namespace CCEngine
 			if (spr == null)
 				return null;
 
-			var seqId = artcfg.GetString(id, "Sequence", "DefaultSequence");
-			var seq = GetSequence(seqId);
+			var seq = GetSequence(artcfg.GetString(id, "Sequence", "DefaultSequence"));
 			spriteArts[artId] = new SpriteArt(spr, seq);
 
 			// Create blueprint.
@@ -67,12 +66,57 @@ namespace CCEngine
 				{"Animation.Art", artId},
 			};
 
-			var blueprint = new Blueprint(config,
+			bp = new Blueprint(config,
 				typeof(CPose),
 				typeof(CAnimation)
 			);
-			blueprints[artId] = blueprint;
-			return blueprint;
+			blueprints[artId] = bp;
+			return bp;
+		}
+
+		public Blueprint GetUnitType(string id)
+		{
+			Blueprint bp;
+			if (blueprints.TryGetValue(id, out bp))
+				return bp;
+
+			if (!rulescfg.Contains(id))
+				return null;
+
+			// Art entry id
+			var artId = rulescfg.GetString(id, "Image", id);
+			if (!spriteArts.ContainsKey(artId))
+			{
+				// Read art.
+				var spr = assets.Load<Sprite>("{0}.SHP".F(artId));
+				if (spr == null)
+					return null;
+
+				var seq = GetSequence(artcfg.GetString(artId, "Sequence", "DefaultSequence"));
+				spriteArts[artId] = new SpriteArt(spr, seq);
+			}
+
+			var cameoId = artcfg.GetString(artId, "Cameo", "1NKICON");
+			var cameo = assets.Load<Sprite>("{0}.SHP".F(cameoId));
+
+			var config = new AttributeTable
+			{
+				{"Animation.Art", artId},
+				{"Cameo", cameo},
+				{"Name", rulescfg.GetString(id, "Name", id)},
+				{"Strength", rulescfg.GetInt(id, "Strength", 0)},
+				{"Armor", rulescfg.GetString(id, "Armor", "none")},
+			};
+
+			Log(Logger.DEBUG, "{0}:\n{1}", id, config);
+
+			bp = new Blueprint(config,
+				typeof(CPose),
+				typeof(CAnimation)
+			);
+
+			blueprints[id] = bp;
+			return bp;
 		}
 
 		private void ReadTheaters()
