@@ -43,5 +43,10 @@ namespace CCEngine
 			var dz = this.z - other.z;
 			return (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
 		}
+
+		public override string ToString()
+		{
+			return "({0}, {1}, {2})".F(x, y, z);
+		}
 	}
 }

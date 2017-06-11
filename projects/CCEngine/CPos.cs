@@ -45,6 +45,11 @@ namespace CCEngine
 			var dy = this.y - other.y;
 			return (float)Math.Sqrt(dx * dx + dy * dy);
 		}
+
+		public override string ToString()
+		{
+			return "({0}, {1})".F(x, y);
+		}
 	}
 
 	public static class RectangleExt

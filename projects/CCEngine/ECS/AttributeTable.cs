@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Text;
 
 namespace CCEngine.ECS
 {
@@ -11,6 +12,8 @@ namespace CCEngine.ECS
 		bool Contains(string name);
 		T Get<T>(string name);
 		T Get<T>(string name, T otherwise);
+
+		StringBuilder GetRepresentation(StringBuilder sb);
 	}
 
 	public class AttributeTable
@@ -52,6 +55,18 @@ namespace CCEngine.ECS
 		{
 			return GetEnumerator();
 		}
+
+		public StringBuilder GetRepresentation(StringBuilder sb)
+		{
+			foreach (var kv in this)
+				sb.AppendLine("{0}={1}".F(kv.Key, kv.Value));
+			return sb;
+		}
+
+		public override string ToString()
+		{
+			return GetRepresentation(new StringBuilder()).ToString();
+		}
 	}
 
 	public class AttributeTableList
@@ -92,6 +107,18 @@ namespace CCEngine.ECS
 		IEnumerator IEnumerable.GetEnumerator()
 		{
 			return GetEnumerator();
+		}
+
+		public StringBuilder GetRepresentation(StringBuilder sb)
+		{
+			foreach(var tab in this)
+				sb = tab.GetRepresentation(sb);
+			return sb;
+		}
+
+		public override string ToString()
+		{
+			return GetRepresentation(new StringBuilder()).ToString();
 		}
 	}
 }
