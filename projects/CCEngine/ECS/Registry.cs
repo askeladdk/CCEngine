@@ -210,11 +210,17 @@ namespace CCEngine.ECS
 			return true;
 		}
 
-		public int Spawn()
+		private int Spawn(Entity entity)
 		{
 			var entityId = ++idCounter;
-			entities[entityId] = new Entity();
+			entities[entityId] = entity;
+			OnEntitySpawned.Invoke(this, entityId);
 			return entityId;
+		}
+
+		public int Spawn()
+		{
+			return Spawn(new Entity());
 		}
 
 		public int Spawn(IBlueprint bluePrint, IAttributeTable attrTable)
@@ -224,7 +230,6 @@ namespace CCEngine.ECS
 				attrTable,
 				bluePrint.Configuration
 			};
-			var entityId = ++idCounter;
 			var entity = bluePrint.ComponentTypes.ToDictionary(
 				x => x,
 				x =>
@@ -234,9 +239,7 @@ namespace CCEngine.ECS
 					return c;
 				}
 			);
-			entities[entityId] = entity;
-			OnEntitySpawned.Invoke(this, entityId);
-			return entityId;
+			return Spawn(entity);
 		}
 
 		public bool IsAlive(int entityId)
