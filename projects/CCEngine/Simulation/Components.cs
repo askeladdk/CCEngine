@@ -25,7 +25,7 @@ namespace CCEngine.Simulation
 		public void Initialise(IAttributeTable table)
 		{
 			this.location = table.Get<CPos>("Pose.Cell").ToMPos();
-			var facing = table.Get<int>("Pose.Facing", 0);
+			this.facing = table.Get<int>("Pose.Facing", 0);
 		}
 	}
 
