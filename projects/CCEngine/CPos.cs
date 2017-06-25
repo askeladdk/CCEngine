@@ -39,6 +39,11 @@ namespace CCEngine
 			get { return y * Constants.MapSize + x; }
 		}
 
+		public CPos Translate(int dx, int dy)
+		{
+			return new CPos(x + dx, y + dy);
+		}
+
 		public float Distance(CPos other)
 		{
 			var dx = this.x - other.x;
@@ -49,6 +54,16 @@ namespace CCEngine
 		public override string ToString()
 		{
 			return "({0}, {1})".F(x, y);
+		}
+
+		public override bool Equals(object obj)
+		{
+			return this.CellId == ((CPos)obj).CellId;
+		}
+
+		public override int GetHashCode()
+		{
+			return this.CellId;
 		}
 	}
 
