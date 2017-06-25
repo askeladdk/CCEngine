@@ -1,49 +1,59 @@
 ﻿using System.Drawing;
+using System.Linq;
 using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using CCEngine.FileFormats;
 using CCEngine.Rendering;
 using CCEngine.Simulation;
+using CCEngine.Algorithms;
 
 namespace CCEngine.Logic
 {
 	class MainMenu : IGameState
 	{
 		bool initialized;
-		Sprite sprite;
 
 		private void Initialize()
 		{
 			initialized = true;
-			this.sprite = Game.Instance.LoadAsset<Sprite>("ctnk.shp");
 			Game.Instance.LoadMap("scg01ea.ini");
 		}
 
 		public void HandleMessage(IMessage message)
 		{
+			var game = Game.Instance;
 			MsgKeyDown msgk;
-			MsgMouseMove mouse;
+			MsgMouseMove mouseMove;
+
 			if(message.Is<MsgKeyDown>(out msgk))
 			{
 				if(msgk.e.Key == OpenTK.Input.Key.Escape)
-				{
-					Game.Instance.SetState(0);
-				}
-
-				if (msgk.e.Key == OpenTK.Input.Key.Right)
-					Game.Instance.Camera.Pan(8, 0);
+					game.SetState(0);
+				else if (msgk.e.Key == OpenTK.Input.Key.Right)
+					game.Camera.Pan(8, 0);
 				else if (msgk.e.Key == OpenTK.Input.Key.Left)
-					Game.Instance.Camera.Pan(-8, 0);
+					game.Camera.Pan(-8, 0);
 				else if (msgk.e.Key == OpenTK.Input.Key.Up)
-					Game.Instance.Camera.Pan(0, -8);
+					game.Camera.Pan(0, -8);
 				else if (msgk.e.Key == OpenTK.Input.Key.Down)
-					Game.Instance.Camera.Pan(0, 8);
+					game.Camera.Pan(0, 8);
 			}
-			else if(message.Is<MsgMouseMove>(out mouse))
+			else if(message.Is<MsgMouseMove>(out mouseMove))
 			{
-				var mousecell = Game.Instance.Camera.ScreenToMapCoord(mouse.e.Position);
-				Game.Instance.Map.CellHighLight = mousecell;
+				var mousecell = game.Camera.ScreenToMapCoord(mouseMove.e.Position).ToCPos();
+				var map = game.Map;
+				map.CellHighLight = mousecell;
+
+				if (map.IsTilePassable(mousecell))
+				{
+					var path = PathFinding.AStar(Game.Instance.Map, new CPos(62, 50), mousecell).ToArray();
+					map.PathHighLight = path;
+				}
+				else
+				{
+					map.PathHighLight = null;
+				}
 			}
 		}
 
@@ -64,49 +74,11 @@ namespace CCEngine.Logic
 
 		public void Render(float dt)
 		{
-			int tick = Game.Instance.GlobalClock;
-			//GL.Enable(EnableCap.Blend);
-			//GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
-
 			var batch = Game.Instance.SpriteBatch;
 
 			batch.Begin();
 			Game.Instance.Map.Render(dt);
 			batch.End();
-
-			/*for (int i = 0; i < 10; i++)
-			{
-				TmpFile tmp = temperat[i + 135];
-				if (tmp != null)
-				{
-					batch.SetSprite(tmp);
-					batch.Draw(i * 48, i * 48);
-				}
-			}*/
-
-			/*
-			var tmp = temperat[400];
-			int tmpw = (int)tmp.CellSize.X;
-			int tmpy = (int)tmp.CellSize.Y;
-			int tmpi = 0;
-			batch.SetSprite(tmp);
-			for (int y = 0; y < tmpy; y++)
-			{
-				for(int x = 0; x < tmpw; x++)
-				{
-					batch.Render(tmpi++, 0, x * tmp.FramePixels.X, y * tmp.FramePixels.Y, 0.0f);
-				}
-			}
-
-			float swh = sprite.FramePixels.X / 2;
-			float shh = sprite.FramePixels.Y / 2;
-			batch
-				.SetSprite(sprite)
-				.Render((int)tick, (int)(tick / 30), -swh + 12 + 24, -shh + 12 + 0, 0.0f)
-				.Render((int)tick, (int)(tick / 30), -swh + 12 + 48, -shh + 12 + 24, 0.0f)
-				.Render((int)tick, (int)(tick / 30), -swh + 12 + 72, -shh + 12 + 48, 1.0f)
-				.End();
-			*/
 		}
 	}
 }

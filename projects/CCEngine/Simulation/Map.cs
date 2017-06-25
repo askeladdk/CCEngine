@@ -8,6 +8,7 @@ using CCEngine.FileFormats;
 using CCEngine.Collections;
 using CCEngine.Rendering;
 using CCEngine.ECS;
+using CCEngine.Algorithms;
 using OpenTK.Graphics.OpenGL;
 
 namespace CCEngine.Simulation
@@ -32,7 +33,7 @@ namespace CCEngine.Simulation
 		}
 	}
 
-	public class Map
+	public class Map : IGrid
 	{
 #if false
 		private struct MapTerrainObject
@@ -55,10 +56,12 @@ namespace CCEngine.Simulation
 
 		private Rectangle objectBounds;
 		private CPos cellHighlight = new CPos(0, 0);
+		private CPos[] pathHighlight;
 
 		public Rectangle Bounds { get { return bounds; } }
 		public Theater Theater { get { return theater; } }
-		public MPos CellHighLight { set { this.cellHighlight = value.ToCPos(); } }
+		public CPos CellHighLight { set { this.cellHighlight = value; } }
+		public CPos[] PathHighLight { set { this.pathHighlight = value; } }
 
 
 		private Map(IConfiguration cfg)
@@ -98,10 +101,66 @@ namespace CCEngine.Simulation
 			return tiles[y * Constants.MapSize + x];
 		}
 
+		public bool IsTilePassable(int x, int y)
+		{
+			MapTile tile = GetTile(x, y);
+			var type = tile.TerrainType;
+			return type == TileTypes.Beach || type == TileTypes.Clear || type == TileTypes.Road;
+		}
+
+		public bool IsTilePassable(CPos cpos)
+		{
+			return IsTilePassable(cpos.X, cpos.Y);
+		}
+
 		public void Update(float dt)
 		{
 			this.registry.Update(dt);
 		}
+
+		#region IGrid
+
+		private struct CellOffset
+		{
+			public readonly int dx;
+			public readonly int dy;
+			public readonly int cost;
+
+			private CellOffset(int dx, int dy, int cost)
+			{
+				this.dx = dx;
+				this.dy = dy;
+				this.cost = cost;
+			}
+
+			public static CellOffset Create(int dx, int dy, int cost)
+			{
+				return new CellOffset(dx, dy, cost);
+			}
+		}
+
+		private static CellOffset[] cellOffsets =
+		{
+			CellOffset.Create(-1, -1, 14),
+			CellOffset.Create( 0, -1, 10),
+			CellOffset.Create( 1, -1, 14),
+			CellOffset.Create(-1,  0, 10),
+			CellOffset.Create( 1,  0, 10),
+			CellOffset.Create(-1,  1, 14),
+			CellOffset.Create( 0,  1, 10),
+			CellOffset.Create( 1,  1, 14),
+		};
+
+		IEnumerable<Tuple<CPos, int>> IGrid.GetPassableNeighbors(CPos cpos)
+		{
+			foreach(var co in cellOffsets)
+			{
+				var neighbor = cpos.Translate(co.dx, co.dy);
+				if (bounds.Contains(neighbor) && IsTilePassable(neighbor))
+					yield return new Tuple<CPos, int>(neighbor, co.cost);
+			}
+		}
+		#endregion
 
 		#region Rendering
 
@@ -155,10 +214,26 @@ namespace CCEngine.Simulation
 				int screenX = screenTopLeft.X;
 				for (int x = cellBounds.Left; x < cellBounds.Right; x++)
 				{
+					var cell = new CPos(x, y);
 					var tile = this.GetTile(x, y);
-					bool highlight = (x == this.cellHighlight.X && y == this.cellHighlight.Y);
-					if (highlight)
+					bool highlight = false;
+
+					/*if(cell.Equals(this.cellHighlight))
+					{
+						highlight = true;
+						batch.SetColor(OpenTK.Graphics.Color4.Yellow);
+					}
+					else*/ if (this.pathHighlight != null && this.pathHighlight.Contains(cell))
+					{
+						highlight = true;
+						batch.SetColor(OpenTK.Graphics.Color4.Blue);
+					}
+					else if(!IsTilePassable(cell))
+					{
+						highlight = true;
 						batch.SetColor(OpenTK.Graphics.Color4.Red);
+					}
+
 					batch
 						.SetSprite(this.theater.GetTemplate(tile.TmpId))
 						.Render(tile.TmpIndex, 0, screenX, screenY);
@@ -169,25 +244,7 @@ namespace CCEngine.Simulation
 				screenY += Constants.TileSize;
 			}
 		}
-
-#if false
-		public void RenderTerrain(SpriteBatch batch, Rectangle objectBounds, Camera camera)
-		{
-			var terrains =
-				from t in this.terrains
-				where objectBounds.Contains(t.position.ToCell())
-				select t;
-
-			foreach(var t in terrains)
-			{
-				var p = camera.MapToScreenCoord(t.position);
-				batch
-					.SetSprite(t.obj.Sprite)
-					.Render(0, 0, p.X, p.Y);
-			}
-		}
-#endif
-
+		
 		#endregion
 
 		#region Map Loading
@@ -235,7 +292,7 @@ namespace CCEngine.Simulation
 				//byte ovridx  = mapdata[3 * Constants.MapCells + i];
 				var tmp = theater.GetTemplate(tmpid);
 				// Replace invalid tiles with the clear tile.
-				if (tmpid == 0 || tmp == null || tmpidx >= tmp.FrameCount)
+				if (tmpid == 0 || tmpid == 65535 || tmp == null || tmpidx >= tmp.FrameCount)
 				{
 					tmpid = 255;
 					tmp = theater.GetTemplate(tmpid);
@@ -259,11 +316,12 @@ namespace CCEngine.Simulation
 				var trnId = kv.Value;
 
 				var bp = Game.Instance.GetTerrainType(trnId, this.theater);
+
 				if(bp != null)
 				{
 					var attrs = new AttributeTable
 					{
-						{"Pose.Cell", new CPos(cell)},
+						{"Pose.Location", new MPos(cell)},
 					};
 					this.registry.Spawn(bp, attrs);
 				}
@@ -287,7 +345,8 @@ namespace CCEngine.Simulation
 				{
 					var attrs = new AttributeTable
 					{
-						{"Pose.Cell", new CPos(cell)},
+						{"Pose.Location", new MPos(cell, true)},
+						{"Pose.Centered", true},
 						{"Pose.Facing", facing},
 					};
 					Game.Instance.Log(Logger.DEBUG, "Spawn {0}\n{1}", technoId, attrs);

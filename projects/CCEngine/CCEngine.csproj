@@ -48,6 +48,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithms\PathFinding.cs" />
+    <Compile Include="Collections\PriorityQueue.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="ECS\Blueprint.cs" />
     <Compile Include="ECS\AttributeTable.cs" />
