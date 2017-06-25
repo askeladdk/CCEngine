@@ -126,6 +126,18 @@ namespace CCEngine
 			this.SendMessage(new MsgMouseMove(e));
 		}
 
+		protected override void OnMouseUp(OpenTK.Input.MouseButtonEventArgs e)
+		{
+			base.OnMouseUp(e);
+			this.SendMessage(new MsgMouseButton(e));
+		}
+
+		protected override void OnMouseDown(OpenTK.Input.MouseButtonEventArgs e)
+		{
+			base.OnMouseDown(e);
+			this.SendMessage(new MsgMouseButton(e));
+		}
+
 		public void SendMessage(IMessage message)
 		{
 			this.bus.SendMessage(message);

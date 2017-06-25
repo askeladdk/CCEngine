@@ -75,6 +75,24 @@ namespace CCEngine
 		}
 	}
 
+
+	public class MsgMouseButton : IMessage
+	{
+		public MouseButtonEventArgs e;
+
+		public int LogLevel { get { return Logger.NEVER; } }
+
+		public MsgMouseButton(MouseButtonEventArgs e)
+		{
+			this.e = e;
+		}
+
+		public override string ToString()
+		{
+			return "Mouse button ({0}, {1})".F(e.Button, e.IsPressed);
+		}
+	}
+
 	public class MsgSpawnEntity : IMessage
 	{
 		public int entityId;
