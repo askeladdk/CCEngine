@@ -98,9 +98,16 @@ namespace CCEngine.Simulation
 			if( objectBounds.Contains(location) )
 			{
 				var p = camera.MapToScreenCoord(location);
+				float x = p.X;
+				float y = p.Y;
+				if(pose.Centered)
+				{
+					x -= animation.Sprite.FramePixels.X / 2;
+					y -= animation.Sprite.FramePixels.Y / 2;
+				}
 				batch
 					.SetSprite(animation.Sprite)
-					.Render(animation.Frame, 0, p.X, p.Y);
+					.Render(animation.Frame, 0, x, y);
 			}
 		}
 

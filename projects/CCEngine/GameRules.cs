@@ -14,6 +14,7 @@ namespace CCEngine
 		private Dictionary<string, SpriteArt> spriteArts = new Dictionary<string, SpriteArt>();
 		private Dictionary<string, Sequence> sequences = new Dictionary<string, Sequence>();
 		private Dictionary<string, Blueprint> blueprints = new Dictionary<string, Blueprint>();
+		private Dictionary<string, Foundation> foundations = new Dictionary<string, Foundation>();
 		private IConfiguration theaterscfg;
 		private IConfiguration artcfg;
 		private IConfiguration rulescfg;
@@ -28,7 +29,7 @@ namespace CCEngine
 			return spriteArts[id];
 		}
 
-		private Sequence GetSequence(string id)
+		public Sequence GetSequence(string id)
 		{
 			Sequence seq;
 			if (sequences.TryGetValue(id, out seq))
@@ -42,6 +43,18 @@ namespace CCEngine
 			}
 			sequences[id] = seq;
 			return seq;
+		}
+
+		public Foundation GetFoundation(string id)
+		{
+			Foundation foundation;
+			if (foundations.TryGetValue(id, out foundation))
+				return foundation;
+			if (!artcfg.Contains(id))
+				throw new Exception("Foundation {0} not found.".F(id));
+			foundation = new Foundation(artcfg, id);
+			foundations[id] = foundation;
+			return foundation;
 		}
 
 		public Blueprint GetTerrainType(string id, Theater theater)
@@ -60,17 +73,22 @@ namespace CCEngine
 			var seq = GetSequence(artcfg.GetString(id, "Sequence", "DefaultSequence"));
 			spriteArts[artId] = new SpriteArt(spr, seq);
 
+			var foundationId = artcfg.GetString(id, "Foundation", "DefaultFoundation");
+
 			// Create blueprint.
 			var config = new AttributeTable
 			{
 				{"Animation.Art", artId},
+				{"Foundation", foundationId},
 			};
 
 			bp = new Blueprint(config,
 				typeof(CPose),
-				typeof(CAnimation)
+				typeof(CAnimation),
+				typeof(CFoundation)
 			);
 			blueprints[artId] = bp;
+			this.Log("BLUEPRINT {0}\n{1}", id, bp.Configuration);
 			return bp;
 		}
 

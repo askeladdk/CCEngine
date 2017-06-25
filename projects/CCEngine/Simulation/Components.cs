@@ -9,6 +9,7 @@ namespace CCEngine.Simulation
 	{
 		private MPos location;
 		private int facing;
+		private bool centered;
 
 		public MPos Location
 		{
@@ -22,9 +23,15 @@ namespace CCEngine.Simulation
 			set { this.facing = value % Constants.Facings; }
 		}
 
+		public bool Centered
+		{
+			get { return this.centered; }
+		}
+
 		public void Initialise(IAttributeTable table)
 		{
-			this.location = table.Get<CPos>("Pose.Cell").ToMPos();
+			this.location = table.Get<MPos>("Pose.Location");
+			this.centered = table.Get<bool>("Pose.Centered", false);
 			this.facing = table.Get<int>("Pose.Facing", 0);
 		}
 	}
@@ -82,6 +89,23 @@ namespace CCEngine.Simulation
 			reset = nextFrame < frame;
 			frame = nextFrame;
 			return frame;
+		}
+	}
+
+	class CFoundation : IComponent
+	{
+		private string foundationId;
+		private Foundation foundation;
+
+		public Foundation Foundation
+		{
+			get { return this.foundation; }
+		}
+		
+		public void Initialise(IAttributeTable table)
+		{
+			this.foundationId = table.Get<string>("Foundation");
+			this.foundation = Game.Instance.GetFoundation(this.foundationId);
 		}
 	}
 }

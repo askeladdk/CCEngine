@@ -44,5 +44,10 @@ namespace CCEngine.Simulation
 					this.occupied[y, x] = (s[x] == 'x');
 			}
 		}
+
+		public override string ToString()
+		{
+			return "[{0}, {1}]".F(this.Width, this.Height);
+		}
 	}
 }

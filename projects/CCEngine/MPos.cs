@@ -16,6 +16,19 @@ namespace CCEngine
 		public int XProj2D { get { return x; } }
 		public int YProj2D { get { return y - z; } }
 
+		public MPos(ushort cellId, bool centered = false)
+		{
+			this.x = (cellId % Constants.MapSize) * Constants.TileSize;
+			this.y = (cellId / Constants.MapSize) * Constants.TileSize;
+			this.z = 0;
+
+			if(centered)
+			{
+				this.x += Constants.TileSize / 2;
+				this.y += Constants.TileSize / 2;
+			}
+		}
+
 		public MPos(int x, int y, int z)
 		{
 			this.x = x;
