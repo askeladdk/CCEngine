@@ -35,20 +35,6 @@ namespace CCEngine.Simulation
 
 	public class Map : IGrid
 	{
-#if false
-		private struct MapTerrainObject
-		{
-			public Point position;
-			public TerrainObject obj;
-
-			public MapTerrainObject(ushort cell, TerrainObject obj)
-			{
-				this.position = PointExt.FromCellId(cell);
-				this.obj = obj;
-			}
-		}
-#endif
-
 		private readonly MapTile[] tiles;
 		private readonly Rectangle bounds;
 		private readonly Theater theater;
