@@ -105,7 +105,7 @@ namespace CCEngine.Simulation
 		{
 			MapTile tile = GetTile(x, y);
 			var type = tile.TerrainType;
-			return type == TileTypes.Beach || type == TileTypes.Clear || type == TileTypes.Road;
+			return type == TileTypes.Beach || type == TileTypes.Clear || type == TileTypes.Road || type == TileTypes.Rough;
 		}
 
 		public bool IsTilePassable(CPos cpos)
@@ -120,44 +120,26 @@ namespace CCEngine.Simulation
 
 		#region IGrid
 
-		private struct CellOffset
+		private static Tuple<int, int, int>[] cellOffsets =
 		{
-			public readonly int dx;
-			public readonly int dy;
-			public readonly int cost;
-
-			private CellOffset(int dx, int dy, int cost)
-			{
-				this.dx = dx;
-				this.dy = dy;
-				this.cost = cost;
-			}
-
-			public static CellOffset Create(int dx, int dy, int cost)
-			{
-				return new CellOffset(dx, dy, cost);
-			}
-		}
-
-		private static CellOffset[] cellOffsets =
-		{
-			CellOffset.Create(-1, -1, 14),
-			CellOffset.Create( 0, -1, 10),
-			CellOffset.Create( 1, -1, 14),
-			CellOffset.Create(-1,  0, 10),
-			CellOffset.Create( 1,  0, 10),
-			CellOffset.Create(-1,  1, 14),
-			CellOffset.Create( 0,  1, 10),
-			CellOffset.Create( 1,  1, 14),
+			// dx, dy, cost
+			Tuple.Create(-1, -1, 14),
+			Tuple.Create( 0, -1, 10),
+			Tuple.Create( 1, -1, 14),
+			Tuple.Create(-1,  0, 10),
+			Tuple.Create( 1,  1, 14),
+			Tuple.Create( 0,  1, 10),
+			Tuple.Create(-1,  1, 14),
+			Tuple.Create( 1,  0, 10),
 		};
 
 		IEnumerable<Tuple<CPos, int>> IGrid.GetPassableNeighbors(CPos cpos)
 		{
 			foreach(var co in cellOffsets)
 			{
-				var neighbor = cpos.Translate(co.dx, co.dy);
+				var neighbor = cpos.Translate(co.Item1, co.Item2);
 				if (bounds.Contains(neighbor) && IsTilePassable(neighbor))
-					yield return new Tuple<CPos, int>(neighbor, co.cost);
+					yield return Tuple.Create(neighbor, co.Item3);
 			}
 		}
 		#endregion
@@ -332,7 +314,9 @@ namespace CCEngine.Simulation
 		{
 			// [UNITS]
 			// num=country,type,health,cell,facing,action,trig
-			foreach(var kv in cfg.Enumerate("UNITS"))
+			if (!cfg.Contains("UNITS"))
+				return;
+			foreach (var kv in cfg.Enumerate("UNITS"))
 			{
 				var data = kv.Value.Split(',');
 				if (data.Length < 7)
