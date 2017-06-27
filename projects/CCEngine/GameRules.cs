@@ -159,7 +159,8 @@ namespace CCEngine
 				var id = entry.Value;
 				var name = theatercfg.GetString(id, "Name");
 				var extension = theatercfg.GetString(id, "Extension");
-				Palette palette = this.LoadAsset<Palette>("{0}.PAL".F(id), false).MakeRemappable(palette_cps);
+				var palname = theatercfg.GetString(id, "Palette");
+				Palette palette = this.LoadAsset<Palette>("{0}.PAL".F(palname), false).MakeRemappable(palette_cps);
 				var templates = new Dictionary<ushort, TmpFile>();
 
 				// Load templates
