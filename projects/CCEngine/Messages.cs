@@ -28,7 +28,7 @@ namespace CCEngine
 	{
 		public KeyboardKeyEventArgs e;
 
-		public int LogLevel { get { return Logger.DEBUG; } }
+		public int LogLevel { get { return Logger.NEVER; } }
 
 		public MsgKeyDown(KeyboardKeyEventArgs e)
 		{

@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using OpenTK;
 using OpenTK.Graphics;
@@ -12,7 +13,9 @@ namespace CCEngine.Logic
 {
 	class MainMenu : IGameState
 	{
-		bool initialized;
+		private bool initialized;
+		private CPos pathGoal;
+		private CPos pathStart;
 
 		private void Initialize()
 		{
@@ -25,6 +28,7 @@ namespace CCEngine.Logic
 			var game = Game.Instance;
 			MsgKeyDown msgk;
 			MsgMouseMove mouseMove;
+			MsgMouseButton mouseButton;
 
 			if(message.Is<MsgKeyDown>(out msgk))
 			{
@@ -41,19 +45,32 @@ namespace CCEngine.Logic
 			}
 			else if(message.Is<MsgMouseMove>(out mouseMove))
 			{
-				var mousecell = game.Camera.ScreenToMapCoord(mouseMove.e.Position).ToCPos();
-				var map = game.Map;
-				map.CellHighLight = mousecell;
+				var mouseCell = game.Camera.ScreenToMapCoord(mouseMove.e.Position).ToCPos();
+				if (mouseCell != pathGoal)
+				{
+					this.pathGoal = mouseCell;
+					var map = game.Map;
+					map.CellHighLight = pathGoal;
 
-				if (map.IsTilePassable(mousecell))
-				{
-					var path = PathFinding.AStar(Game.Instance.Map, new CPos(62, 50), mousecell).ToArray();
-					map.PathHighLight = path;
+					if (map.IsTilePassable(pathGoal))
+					{
+						var watch = new Stopwatch();
+						watch.Start();
+						var path = PathFinding.AStar(Game.Instance.Map, pathStart, pathGoal).ToArray();
+						watch.Stop();
+						game.Log("Path finding time: {0}".F(watch.Elapsed));
+						map.PathHighLight = path;
+					}
+					else
+					{
+						map.PathHighLight = null;
+					}
 				}
-				else
-				{
-					map.PathHighLight = null;
-				}
+			}
+			else if(message.Is<MsgMouseButton>(out mouseButton))
+			{
+				if(mouseButton.e.IsPressed)
+					this.pathStart = game.Camera.ScreenToMapCoord(mouseButton.e.Position).ToCPos();
 			}
 		}
 
