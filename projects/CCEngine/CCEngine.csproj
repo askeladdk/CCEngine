@@ -62,6 +62,7 @@
     <Compile Include="Rendering\FrameBuffer.cs" />
     <Compile Include="CPos.cs" />
     <Compile Include="Simulation\Components.cs" />
+    <Compile Include="Facing.cs" />
     <Compile Include="Simulation\Processors.cs" />
     <Compile Include="Simulation\SpriteArt.cs" />
     <Compile Include="Simulation\Map.cs" />

@@ -46,7 +46,7 @@ namespace CCEngine.Rendering
 			var seq = sequences[animId];
 			return
 				seq.offset
-				+ (seq.stride * seq.facings * facing) / Constants.Facings
+				+ seq.stride * Facing.Scale(facing, seq.facings)
 				+ (globalClock / seq.rate) % seq.framesPerFacing;
 		}
 	}

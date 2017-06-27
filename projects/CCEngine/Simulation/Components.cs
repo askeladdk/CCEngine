@@ -20,7 +20,7 @@ namespace CCEngine.Simulation
 		public int Facing
 		{
 			get { return this.facing; }
-			set { this.facing = value % Constants.Facings; }
+			set { this.facing = CCEngine.Facing.FromInt(value); }
 		}
 
 		public bool Centered

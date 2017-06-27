@@ -56,17 +56,5 @@ namespace CCEngine
 		{
 			return Math.Min(Math.Max(value, min), max);
 		}
-
-		public static float FacingToOrientation(int facing)
-		{
-			// add 1/2pi because facing 0 = north instead of east.
-			return PI05 + (PI20 * (float)facing) / (float)Constants.Facings;
-		}
-
-		public static int OrientationToFacing(float orientation)
-		{
-			// subtract 1/2pi because facing 0 = north instead of east.
-			return (int)(Constants.Facings * (orientation - PI05) / PI20) % Constants.Facings;
-		}
 	}
 }

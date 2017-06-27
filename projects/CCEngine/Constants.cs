@@ -22,8 +22,5 @@ namespace CCEngine
 		// HUD constants.
 		public const int HUDTopBarHeight = 16;
 		public const int HUDSideBarWidth = 160;
-
-		// Logical number of facings a TechnoType has.
-		public const int Facings = 256;
 	}
 }
