@@ -193,7 +193,10 @@ namespace CCEngine
 
 		public void LoadMap(string mapfile)
 		{
-			this.map = assets.Load<Map>(mapfile, false);
+			var map = assets.Load<Map>(mapfile, false);
+			if (map == null)
+				throw new Exception("Map {0} not found!".F(mapfile));
+			this.map = map;
 			this.camera.SetBounds(this.map);
 		}
 
