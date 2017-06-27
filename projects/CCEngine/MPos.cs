@@ -5,9 +5,9 @@ namespace CCEngine
 	/// <summary>
 	/// Map position.
 	/// </summary>
-	public struct MPos
+	public struct MPos : IEquatable<MPos>
 	{
-		private int x, y, z;
+		private readonly int x, y, z;
 
 		public int X { get { return x; } }
 		public int Y { get { return y; } }
@@ -60,6 +60,38 @@ namespace CCEngine
 		public override string ToString()
 		{
 			return "({0}, {1}, {2})".F(x, y, z);
+		}
+
+		public override int GetHashCode()
+		{
+			unchecked
+			{
+				var hash = (int)2166136261;
+				hash = (16777619 * hash) ^ x.GetHashCode();
+				hash = (16777619 * hash) ^ y.GetHashCode();
+				hash = (16777619 * hash) ^ z.GetHashCode();
+				return hash;
+			}
+		}
+
+		public override bool Equals(object rhs)
+		{
+			return this == ((MPos)rhs);
+		}
+
+		bool IEquatable<MPos>.Equals(MPos rhs)
+		{
+			return this == rhs;
+		}
+
+		public static bool operator==(MPos lhs, MPos rhs)
+		{
+			return !(lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z);
+		}
+
+		public static bool operator!=(MPos lhs, MPos rhs)
+		{
+			return lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z;
 		}
 	}
 }

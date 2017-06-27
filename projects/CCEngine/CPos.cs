@@ -6,9 +6,9 @@ namespace CCEngine
 	/// <summary>
 	/// Cell position.
 	/// </summary>
-	public struct CPos
+	public struct CPos : IEquatable<CPos>
 	{
-		private int x, y;
+		private readonly int x, y;
 
 		public int X { get { return x; } }
 		public int Y { get { return y; } }
@@ -56,14 +56,35 @@ namespace CCEngine
 			return "({0}, {1})".F(x, y);
 		}
 
-		public override bool Equals(object obj)
-		{
-			return this.CellId == ((CPos)obj).CellId;
-		}
-
 		public override int GetHashCode()
 		{
-			return this.CellId;
+			unchecked
+			{
+				var hash = (int)2166136261;
+				hash = (16777619 * hash) ^ x.GetHashCode();
+				hash = (16777619 * hash) ^ y.GetHashCode();
+				return hash;
+			}
+		}
+
+		public override bool Equals(object rhs)
+		{
+			return this == ((CPos)rhs);
+		}
+
+		bool IEquatable<CPos>.Equals(CPos rhs)
+		{
+			return this == rhs;
+		}
+
+		public static bool operator==(CPos lhs, CPos rhs)
+		{
+			return !(lhs.x != rhs.x || lhs.y != rhs.y);
+		}
+
+		public static bool operator!=(CPos lhs, CPos rhs)
+		{
+			return lhs.x != rhs.x || lhs.y != rhs.y;
 		}
 	}
 

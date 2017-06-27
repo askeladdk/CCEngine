@@ -37,9 +37,9 @@ namespace CCEngine.Algorithms
 			while (frontier.TryDequeue(out current))
 			{
 				// Path found.
-				if (current.Equals(start))
+				if (current == start)
 				{
-					while(!current.Equals(goal))
+					while(current != goal)
 					{
 						yield return current;
 						current = cameFrom[current];
