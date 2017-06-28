@@ -31,7 +31,8 @@ namespace CCEngine
 		/// </summary>
 		public static int FromRadians(double radians)
 		{
-			return (int)(Facings * (radians - PI05d) / PI20d) % Facings;
+			var facings = (int)(Facings * (radians - PI05d) / PI20d);
+			return FromInt((facings + 1) & ~1); // boot out odd numbers to fix small rounding errors
 		}
 
 		/// <summary>
@@ -39,7 +40,8 @@ namespace CCEngine
 		/// </summary>
 		public static int FromRadians(float radians)
 		{
-			return (int)(Facings * (radians - PI05f) / PI20f) % Facings;
+			var facings = (int)(Facings * (radians - PI05f) / PI20f);
+			return FromInt((facings + 1) & ~1); // boot out odd numbers to fix small rounding errors
 		}
 
 		/// <summary>
@@ -62,18 +64,18 @@ namespace CCEngine
 		/// <summary>
 		/// Calculate the angle in logical facings between two map positions.
 		/// </summary>
-		public static int Between(MPos a, MPos b)
+		public static int Between(MPos source, MPos target)
 		{
-			var radians = Math.Atan2(b.YProj2D - a.YProj2D, b.XProj2D - a.XProj2D);
+			var radians = PI20d + Math.Atan2(source.Y - target.Y, source.X - target.X);
 			return FromRadians(radians);
 		}
 
 		/// <summary>
 		/// Calculate the angle in logical facings between two cell locations.
 		/// </summary>
-		public static int Between(CPos a, CPos b)
+		public static int Between(CPos source, CPos target)
 		{
-			var radians = Math.Atan2(b.Y - a.Y, b.X - a.X);
+			var radians = PI20d + Math.Atan2(source.Y - target.Y, source.X - target.X);
 			return FromRadians(radians);
 		}
 	}
