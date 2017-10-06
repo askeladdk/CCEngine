@@ -37,9 +37,12 @@ namespace CCEngine
 			{
 				int median = lo + (hi - lo >> 1);
 				var num = comp.Compare(selector(tf[median]), target);
-				if (num == 0) return median;
-				if (num  < 0) lo = median + 1;
-				else          hi = median - 1;
+				if (num == 0)
+					return median;
+				if (num  < 0)
+					lo = median + 1;
+				else
+					hi = median - 1;
 			}
 
 			return ~lo;

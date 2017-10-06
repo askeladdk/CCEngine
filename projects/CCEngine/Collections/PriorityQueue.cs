@@ -40,8 +40,10 @@ namespace CCEngine.Collections
 				var left = 2 * idx + 1;
 				var right = left + 1;
 				var min = idx;
-				if (left < count && Compare(left, min) <= 0) min = left;
-				if (right < count && Compare(right, min) <= 0) min = right;
+				if (left < count && Compare(left, min) <= 0)
+					min = left;
+				if (right < count && Compare(right, min) <= 0)
+					min = right;
 				if (min == idx)
 					break;
 				Swap(min, idx);
