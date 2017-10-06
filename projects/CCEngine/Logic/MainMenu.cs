@@ -25,7 +25,7 @@ namespace CCEngine.Logic
 
 		public void HandleMessage(IMessage message)
 		{
-			var game = Game.Instance;
+			var g = Game.Instance;
 			MsgKeyDown msgk;
 			MsgMouseMove mouseMove;
 			MsgMouseButton mouseButton;
@@ -33,32 +33,34 @@ namespace CCEngine.Logic
 			if(message.Is<MsgKeyDown>(out msgk))
 			{
 				if(msgk.e.Key == OpenTK.Input.Key.Escape)
-					game.SetState(0);
+					g.SetState(0);
 				else if (msgk.e.Key == OpenTK.Input.Key.Right)
-					game.Camera.Pan(8, 0);
+					g.Camera.Pan(8, 0);
 				else if (msgk.e.Key == OpenTK.Input.Key.Left)
-					game.Camera.Pan(-8, 0);
+					g.Camera.Pan(-8, 0);
 				else if (msgk.e.Key == OpenTK.Input.Key.Up)
-					game.Camera.Pan(0, -8);
+					g.Camera.Pan(0, -8);
 				else if (msgk.e.Key == OpenTK.Input.Key.Down)
-					game.Camera.Pan(0, 8);
+					g.Camera.Pan(0, 8);
 			}
 			else if(message.Is<MsgMouseMove>(out mouseMove))
 			{
-				var mouseCell = game.Camera.ScreenToMapCoord(mouseMove.e.Position).ToCPos();
+				var mousePos = g.Camera.ScreenToMapCoord(mouseMove.e.Position);
+				g.mousePos = mousePos;
+				var mouseCell = mousePos.ToCPos();
 				if (mouseCell != pathGoal)
 				{
 					this.pathGoal = mouseCell;
-					var map = game.Map;
-					map.CellHighLight = pathGoal;
+					var map = g.Map;
+					var mz = MovementZone.Foot;
 
-					if (map.IsTilePassable(pathGoal))
+					if (map.IsCellPassable(mz, pathGoal))
 					{
 						var watch = new Stopwatch();
 						watch.Start();
-						var path = PathFinding.AStar(Game.Instance.Map, pathStart, pathGoal).ToArray();
+						var path = PathFinding.AStar(Game.Instance.Map, pathStart, pathGoal, mz).ToArray();
 						watch.Stop();
-						game.Log("Path finding time: {0}".F(watch.Elapsed));
+						g.Log("Path finding time: {0}, Facing: {1}".F(watch.Elapsed, Facing.Between(pathStart, pathGoal)));
 						map.PathHighLight = path;
 					}
 					else
@@ -69,8 +71,15 @@ namespace CCEngine.Logic
 			}
 			else if(message.Is<MsgMouseButton>(out mouseButton))
 			{
-				if(mouseButton.e.IsPressed)
-					this.pathStart = game.Camera.ScreenToMapCoord(mouseButton.e.Position).ToCPos();
+				if (mouseButton.e.IsPressed)
+				{
+					this.pathStart = g.Camera.ScreenToMapCoord(mouseButton.e.Position).ToCPos();
+					g.Map.CellHighLight = pathStart;
+				}
+			}
+			else
+			{
+				g.Map.HandleMessage(message);
 			}
 		}
 

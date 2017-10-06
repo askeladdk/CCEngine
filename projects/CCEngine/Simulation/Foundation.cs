@@ -5,49 +5,26 @@ using CCEngine.FileFormats;
 
 namespace CCEngine.Simulation
 {
+	/// <summary>
+	/// Foundation specifies the width and height in cells of structures and terrain objects.
+	/// </summary>
 	public class Foundation
 	{
-		private bool[,] occupied;
-		private int shiftx;
-		private int shifty;
+		private int width;
+		private int height;
 
-		public int Width { get { return this.occupied.GetLength(1); } }
-		public int Height { get { return this.occupied.GetLength(0); } }
-		public int ShiftX { get { return this.shiftx; } }
-		public int ShiftY { get { return this.shifty; } }
-
-		public bool IsOccupied(int x, int y)
-		{
-			return this.occupied[y, x];
-		}
+		public int Width { get { return this.width; } }
+		public int Height { get { return this.height; } }
 
 		public Foundation(IConfiguration ini, string section)
 		{
-			int h = ini.Enumerate(section).Count();
-			int w = ini.GetString(section, "0", string.Empty).Length;
-
-			if (h == 0 || w == 0)
-				throw new Exception("[{0}] empty grid".F(section));
-
-			this.shiftx = ini.GetInt(section, "ShiftX", 0);
-			this.shifty = ini.GetInt(section, "ShiftY", 0);
-			this.occupied = new bool[h, w];
-
-			for (int y = 0; y < h; y++)
-			{
-				var s = ini.GetString(section, y.ToString());
-				if (s == null)
-					break;
-				if (s.Length != w)
-					throw new Exception("[{0}] unequal grid".F(section));
-				for (int x = 0; x < w; x++)
-					this.occupied[y, x] = (s[x] == 'x');
-			}
+			this.width = ini.GetInt(section, "W");
+			this.height = ini.GetInt(section, "H");
 		}
 
 		public override string ToString()
 		{
-			return "[{0}, {1}]".F(this.Width, this.Height);
+			return "[{0}, {1}]".F(this.width, this.height);
 		}
 	}
 }

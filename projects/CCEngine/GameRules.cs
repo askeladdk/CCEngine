@@ -15,6 +15,8 @@ namespace CCEngine
 		private Dictionary<string, Sequence> sequences = new Dictionary<string, Sequence>();
 		private Dictionary<string, Blueprint> blueprints = new Dictionary<string, Blueprint>();
 		private Dictionary<string, Foundation> foundations = new Dictionary<string, Foundation>();
+		private Dictionary<string, StructureGrid> grids = new Dictionary<string, StructureGrid>();
+		private Dictionary<LandType, Land> lands = new Dictionary<LandType, Land>();
 		private IConfiguration theaterscfg;
 		private IConfiguration artcfg;
 		private IConfiguration rulescfg;
@@ -57,6 +59,18 @@ namespace CCEngine
 			return foundation;
 		}
 
+		public StructureGrid GetGrid(string id)
+		{
+			StructureGrid grid;
+			if (grids.TryGetValue(id, out grid))
+				return grid;
+			if (!artcfg.Contains(id))
+				throw new Exception("Grid {0} not found.".F(id));
+			grid = new StructureGrid(artcfg, id);
+			grids[id] = grid;
+			return grid;
+		}
+
 		public Blueprint GetTerrainType(string id, Theater theater)
 		{
 			// Check cache
@@ -73,19 +87,28 @@ namespace CCEngine
 			var seq = GetSequence(artcfg.GetString(id, "Sequence", "DefaultSequence"));
 			spriteArts[artId] = new SpriteArt(spr, seq);
 
-			var foundationId = artcfg.GetString(id, "Foundation", "DefaultFoundation");
+			var foundationId = artcfg.GetString(id, "Foundation", "1x1");
+			var occupyGridId = artcfg.GetString(id, "Occupy", "DefaultGrid");
+			var overlapGridId = artcfg.GetString(id, "Overlap", "DefaultGrid");
+
+			var centerOffsetX = (int)spr.FramePixels.X / 2;
+			var centerOffsetY = (int)spr.FramePixels.Y / 2;
 
 			// Create blueprint.
 			var config = new AttributeTable
 			{
 				{"Animation.Art", artId},
-				{"Foundation", foundationId},
+				{"Placement.Foundation", foundationId},
+				{"Placement.Occupy", occupyGridId},
+				{"Placement.Overlap", overlapGridId},
+				{"Pose.CenterOffsetX", centerOffsetX},
+				{"Pose.CenterOffsetY", centerOffsetY},
 			};
 
 			bp = new Blueprint(config,
 				typeof(CPose),
 				typeof(CAnimation),
-				typeof(CFoundation)
+				typeof(CPlacement)
 			);
 			blueprints[artId] = bp;
 			this.Log("BLUEPRINT {0}\n{1}", id, bp.Configuration);
@@ -114,16 +137,21 @@ namespace CCEngine
 				spriteArts[artId] = new SpriteArt(spr, seq);
 			}
 
-			var cameoId = artcfg.GetString(artId, "Cameo", "1NKICON");
-			var cameo = assets.Load<Sprite>("{0}.SHP".F(cameoId));
+			var centerOffsetX = artcfg.GetInt(artId, "CenterOffsetX");
+			var centerOffsetY = artcfg.GetInt(artId, "CenterOffsetY");
+			var drawOffsetX = artcfg.GetInt(artId, "DrawOffsetX");
+			var drawOffsetY = artcfg.GetInt(artId, "DrawOffsetY");
 
 			var config = new AttributeTable
 			{
 				{"Animation.Art", artId},
-				{"Cameo", cameo},
+				{"Animation.DrawOffsetX", drawOffsetX},
+				{"Animation.DrawOffsetY", drawOffsetY},
+				{"Pose.CenterOffsetX", centerOffsetX},
+				{"Pose.CenterOffsetY", centerOffsetY},
 				{"Name", rulescfg.GetString(id, "Name", id)},
-				{"Strength", rulescfg.GetInt(id, "Strength", 0)},
-				{"Armor", rulescfg.GetString(id, "Armor", "none")},
+				{"Health.Strength", rulescfg.GetInt(id, "Strength", 0)},
+				{"Health.Armor", rulescfg.GetString(id, "Armor", "none")},
 			};
 
 			Log(Logger.DEBUG, "{0}:\n{1}", id, config);
@@ -137,10 +165,19 @@ namespace CCEngine
 			return bp;
 		}
 
+		public Land GetLand(LandType id)
+		{
+			Land land;
+			if (lands.TryGetValue(id, out land))
+				return land;
+			land = new Land(rulescfg, Land.Lands[id], id);
+			lands[id] = land;
+			return land;
+		}
+
 		private void ReadTheaters()
 		{
 			var theatercfg = this.theaterscfg;
-			var theaters = new Dictionary<string, Theater>();
 
 			var tmplist = theatercfg
 				.Enumerate("Templates")
@@ -160,7 +197,7 @@ namespace CCEngine
 				var name = theatercfg.GetString(id, "Name");
 				var extension = theatercfg.GetString(id, "Extension");
 				var palname = theatercfg.GetString(id, "Palette");
-				Palette palette = this.LoadAsset<Palette>("{0}.PAL".F(palname), false).MakeRemappable(palette_cps);
+				var palette = this.LoadAsset<Palette>("{0}.PAL".F(palname), false).MakeRemappable(palette_cps);
 				var templates = new Dictionary<ushort, TmpFile>();
 
 				// Load templates
@@ -174,59 +211,6 @@ namespace CCEngine
 				this.theaters[id] = new Theater(name, extension, palette, templates);
 			}
 		}
-
-
-#if false
-		private SpriteArt ReadTechnoTypeArt(string section)
-		{
-			SpriteArt art;
-
-			if (!this.spriteArt.TryGetValue(section, out art))
-			{
-				var cameoshp = artcfg.GetString(section, "Cameo", "XXICON");
-				var sprite = LoadAsset<Sprite>("{0}.SHP".F(section));
-				//var cameo = LoadAsset<Sprite>("{0}.SHP".F(cameoshp));
-				var facings = artcfg.GetInt(section, "Facings", 1);
-
-				var seqid = artcfg.GetString(section, "Sequence");
-				Sequence seq;
-				if (!sequences.TryGetValue(seqid, out seq))
-				{
-					seq = ReadSequence(seqid);
-					sequences[seqid] = seq;
-				}
-
-				this.spriteArt[section] = art = new SpriteArt(sprite, seq, facings);
-			}
-
-			return art;
-		}
-
-		private TechnoType ReadTechnoType(string id)
-		{
-			var art = ReadTechnoTypeArt(id);
-			//var strength = rulescfg.GetInt(id, "Strength", 1);
-			var techno = new TechnoType(TechnoTypes.Vehicle, art);
-			return techno;
-		}
-#endif
-
-#if false
-		private Blueprint GetVehicleType(string id)
-		{
-			var artId = rulescfg.GetString(id, "Image", id);
-		}
-
-		private void LoadVehicleTypes()
-		{
-			foreach(var entry in rulescfg.Enumerate("VehicleTypes"))
-			{
-				var id = entry.Value;
-				var artId = rulescfg.GetString(id, "Image", id);
-				this.technoTypes[id] = ReadTechnoType(id);
-			}
-		}
-#endif
 
 		public void SetRules()
 		{

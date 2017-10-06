@@ -13,29 +13,9 @@ using OpenTK.Graphics.OpenGL;
 
 namespace CCEngine.Simulation
 {
-
-	public struct MapTile
-	{
-		public readonly ushort TmpId;
-		public readonly byte TmpIndex;
-		public readonly TileTypes TerrainType;
-
-		public MapTile(ushort tmpid, byte tmpidx, TileTypes type)
-		{
-			this.TmpId = tmpid;
-			this.TmpIndex = tmpidx;
-			this.TerrainType = type;
-		}
-
-		public override string ToString()
-		{
-			return "{0}.{1}.{2}".F(TmpId, TmpIndex, TerrainType);
-		}
-	}
-
 	public class Map : IGrid
 	{
-		private readonly MapTile[] tiles;
+		private readonly MapCell[] cells;
 		private readonly Rectangle bounds;
 		private readonly Theater theater;
 		private Registry registry;
@@ -44,6 +24,7 @@ namespace CCEngine.Simulation
 		private CPos cellHighlight = new CPos(0, 0);
 		private CPos[] pathHighlight;
 
+		public Registry Registry { get { return registry; } }
 		public Rectangle Bounds { get { return bounds; } }
 		public Theater Theater { get { return theater; } }
 		public CPos CellHighLight { set { this.cellHighlight = value; } }
@@ -56,7 +37,7 @@ namespace CCEngine.Simulation
 			var theaterid = cfg.GetString("Map", "Theater");
 			this.theater = Game.Instance.GetTheater(theaterid);
 			this.bounds = ReadBounds(cfg);
-			this.tiles = ReadTiles(cfg);
+			this.cells = ReadTiles(cfg);
 			SpawnTerrains(cfg);
 			SpawnUnits(cfg);
 		}
@@ -82,26 +63,43 @@ namespace CCEngine.Simulation
 			return registry;
 		}
 
-		public MapTile GetTile(int x, int y)
+		public MapCell GetCell(int cellId)
 		{
-			return tiles[y * Constants.MapSize + x];
+			return cells[cellId];
 		}
 
-		public bool IsTilePassable(int x, int y)
+		public MapCell GetCell(int x, int y)
 		{
-			MapTile tile = GetTile(x, y);
-			var type = tile.TerrainType;
-			return type == TileTypes.Beach || type == TileTypes.Clear || type == TileTypes.Road || type == TileTypes.Rough;
+			return this.GetCell(y * Constants.MapSize + x);
 		}
 
-		public bool IsTilePassable(CPos cpos)
+		public bool IsCellPassable(MovementZone mz, CPos cpos)
 		{
-			return IsTilePassable(cpos.X, cpos.Y);
+			return this.GetCell(cpos.X, cpos.Y).IsPassable(mz);
 		}
 
 		public void Update(float dt)
 		{
 			this.registry.Update(dt);
+		}
+
+		private bool TryPlace(int entityId)
+		{
+			CPlacement placement;
+			if(!this.registry.TryGetComponent<CPlacement>(entityId, out placement))
+				return false;
+
+			var pose = this.registry.GetComponent<CPose>(entityId);
+			var center = pose.CellLocation.CellId;
+
+			var occupy = placement.OccupyGrid;
+			for (int i = 0; i < occupy.Length; i++)
+			{
+				var tile = this.GetCell(center + occupy[i]);
+				tile.OccupyEntityId = entityId;
+			}
+
+			return true;
 		}
 
 		#region IGrid
@@ -119,12 +117,12 @@ namespace CCEngine.Simulation
 			Tuple.Create( 1,  0, 10),
 		};
 
-		IEnumerable<Tuple<CPos, int>> IGrid.GetPassableNeighbors(CPos cpos)
+		IEnumerable<Tuple<CPos, int>> IGrid.GetPassableNeighbors(MovementZone mz, CPos cpos)
 		{
 			foreach(var co in cellOffsets)
 			{
 				var neighbor = cpos.Translate(co.Item1, co.Item2);
-				if (bounds.Contains(neighbor) && IsTilePassable(neighbor))
+				if (bounds.Contains(neighbor) && IsCellPassable(mz, neighbor))
 					yield return Tuple.Create(neighbor, co.Item3);
 			}
 		}
@@ -149,10 +147,10 @@ namespace CCEngine.Simulation
 
 			// Only render objects that are within this map pixel rectangle.
 			this.objectBounds = new Rectangle(
-				Constants.TileSize * Math.Max(0, cellBounds.X - 1),
-				Constants.TileSize * Math.Max(0, cellBounds.Y - 1),
-				Constants.TileSize * Math.Min(cellBounds.Width + 1, Constants.MapSize),
-				Constants.TileSize * Math.Min(cellBounds.Height + 1, Constants.MapSize)
+				Constants.TileSize * Math.Max(0, cellBounds.X - 0),
+				Constants.TileSize * Math.Max(0, cellBounds.Y - 0),
+				Constants.TileSize * Math.Min(cellBounds.Width + 0, Constants.MapSize),
+				Constants.TileSize * Math.Min(cellBounds.Height + 0, Constants.MapSize)
 			);
 
 			// Crop rendering to HUD camera area.
@@ -165,6 +163,7 @@ namespace CCEngine.Simulation
 
 			// Render entities.
 			batch.SetBlending(true);
+			//this.RenderOccupyLayer(batch, cellBounds, screenTopLeft);
 			this.registry.Render(dt);
 
 			// Finish up.
@@ -175,36 +174,66 @@ namespace CCEngine.Simulation
 
 		public void RenderGround(SpriteBatch batch, Rectangle cellBounds, Point screenTopLeft)
 		{
-			batch.SetBlending(false);
 			int screenY = screenTopLeft.Y;
 			for (int y = cellBounds.Top; y < cellBounds.Bottom; y++)
 			{
 				int screenX = screenTopLeft.X;
 				for (int x = cellBounds.Left; x < cellBounds.Right; x++)
 				{
-					var cell = new CPos(x, y);
-					var tile = this.GetTile(x, y);
+					var cpos = new CPos(x, y);
+					var cell = this.GetCell(x, y);
+					var landtype = cell.Land.Type;
 					bool highlight = false;
 
-					/*if(cell.Equals(this.cellHighlight))
+					if(cpos.Equals(this.cellHighlight))
 					{
 						highlight = true;
-						batch.SetColor(OpenTK.Graphics.Color4.Yellow);
+						batch.SetColor(OpenTK.Graphics.Color4.LightBlue);
 					}
-					else*/ if (this.pathHighlight != null && this.pathHighlight.Contains(cell))
+					else if (this.pathHighlight != null && this.pathHighlight.Contains(cpos))
 					{
 						highlight = true;
 						batch.SetColor(OpenTK.Graphics.Color4.Blue);
 					}
-					else if(!IsTilePassable(cell))
+					else if (cell.OccupyEntityId != 0)
+					{
+						highlight = true;
+						batch.SetColor(OpenTK.Graphics.Color4.Purple);
+					}
+
+					else if(landtype == LandType.Rock)
 					{
 						highlight = true;
 						batch.SetColor(OpenTK.Graphics.Color4.Red);
 					}
-
+					else if (landtype == LandType.Rough)
+					{
+						highlight = true;
+						batch.SetColor(OpenTK.Graphics.Color4.Yellow);
+					}
+					else if (landtype == LandType.Road)
+					{
+						highlight = true;
+						batch.SetColor(OpenTK.Graphics.Color4.YellowGreen);
+					}
+					else if (landtype == LandType.Beach)
+					{
+						highlight = true;
+						batch.SetColor(OpenTK.Graphics.Color4.LightSeaGreen);
+					}
+					else if (landtype == LandType.Water)
+					{
+						highlight = true;
+						batch.SetColor(OpenTK.Graphics.Color4.LightGreen);
+					}
+					else if (landtype == LandType.River)
+					{
+						highlight = true;
+						batch.SetColor(OpenTK.Graphics.Color4.Green);
+					}
 					batch
-						.SetSprite(this.theater.GetTemplate(tile.TmpId))
-						.Render(tile.TmpIndex, 0, screenX, screenY);
+						.SetSprite(this.theater.GetTemplate(cell.TmpId))
+						.Render(cell.TmpIndex, 0, screenX, screenY);
 					if (highlight)
 						batch.SetColor();
 					screenX += Constants.TileSize;
@@ -212,6 +241,35 @@ namespace CCEngine.Simulation
 				screenY += Constants.TileSize;
 			}
 		}
+
+#if false
+		public void RenderOccupyLayer(SpriteBatch batch, Rectangle cellBounds, Point screenTopLeft)
+		{
+			batch.SetColor(OpenTK.Graphics.Color4.Yellow);
+			int screenY = screenTopLeft.Y;
+			for (int y = cellBounds.Top; y < cellBounds.Bottom; y++)
+			{
+				int screenX = screenTopLeft.X;
+				for (int x = cellBounds.Left; x < cellBounds.Right; x++)
+				{
+					var tile = this.GetTile(x, y);
+					var entityId = tile.OccupyEntityId;
+
+					if (entityId != 0)
+					{
+						var animation = this.registry.GetComponent<CAnimation>(entityId);
+
+						batch
+							.SetSprite(animation.Sprite)
+							.RenderTile(animation.Frame, tile.OccupyTileId, screenX, screenY);
+					}
+					screenX += Constants.TileSize;
+				}
+				screenY += Constants.TileSize;
+			}
+			batch.SetColor();
+		}
+#endif
 		
 		#endregion
 
@@ -238,16 +296,16 @@ namespace CCEngine.Simulation
 			}
 		}
 
-		private MapTile[] ReadTiles(IConfiguration cfg)
+		private MapCell[] ReadTiles(IConfiguration cfg)
 		{
 			var theater = this.theater;
-			byte[] mapdata = new byte[4 * Constants.MapCells];
+			byte[] mapdata = new byte[4 * Constants.MapCellCount];
 
-			UnpackSection(cfg, "MapPack", mapdata, 0, 3 * Constants.MapCells);
-			UnpackSection(cfg, "OverlayPack", mapdata, 3 * Constants.MapCells, Constants.MapCells);
+			UnpackSection(cfg, "MapPack", mapdata, 0, 3 * Constants.MapCellCount);
+			UnpackSection(cfg, "OverlayPack", mapdata, 3 * Constants.MapCellCount, Constants.MapCellCount);
 
 			var rng = new Random(0);
-			var cells = new MapTile[Constants.MapCells];
+			var cells = new MapCell[Constants.MapCellCount];
 
 			for (int i = 0; i < cells.Length; i++)
 			{
@@ -256,7 +314,7 @@ namespace CCEngine.Simulation
 				byte tmpid0  = mapdata[2 * i + 0];
 				byte tmpid1  = mapdata[2 * i + 1];
 				ushort tmpid = (ushort)(tmpid1 << 8 | tmpid0);
-				byte tmpidx  = mapdata[2 * Constants.MapCells + i];
+				byte tmpidx  = mapdata[2 * Constants.MapCellCount + i];
 				//byte ovridx  = mapdata[3 * Constants.MapCells + i];
 				var tmp = theater.GetTemplate(tmpid);
 				// Replace invalid tiles with the clear tile.
@@ -267,8 +325,9 @@ namespace CCEngine.Simulation
 				}
 				if (tmpid == 255)
 					tmpidx = (byte)rng.Next(tmp.FrameCount);
-				var type = tmp.GetTerrainType(tmpidx);
-				cells[i] = new MapTile(tmpid, tmpidx, type);
+				var type = tmp.GetLandType(tmpidx);
+				var land = Game.Instance.GetLand(type);
+				cells[i] = new MapCell(tmpid, tmpidx, land);
 			}
 
 			return cells;
@@ -291,7 +350,9 @@ namespace CCEngine.Simulation
 					{
 						{"Pose.Location", new MPos(cell)},
 					};
-					this.registry.Spawn(bp, attrs);
+					//var entityId = this.registry.Spawn(bp, attrs);
+					//this.TryPlace(entityId);
+					Game.Instance.SendMessage(new MsgSpawnEntity(trnId, TechnoType.Terrain, attrs));
 				}
 			}
 		}
@@ -315,14 +376,47 @@ namespace CCEngine.Simulation
 				{
 					var attrs = new AttributeTable
 					{
-						{"Pose.Location", new MPos(cell, true)},
-						{"Pose.Centered", true},
+						{"Pose.Location", new MPos(cell)},
 						{"Pose.Facing", facing},
 					};
-					Game.Instance.Log(Logger.DEBUG, "Spawn {0}\n{1}", technoId, attrs);
-					this.registry.Spawn(bp, attrs);
+					//Game.Instance.Log(Logger.DEBUG, "Spawn {0}\n{1}", technoId, attrs);
+					//this.registry.Spawn(bp, attrs);
+					Game.Instance.SendMessage(new MsgSpawnEntity(technoId, TechnoType.Vehicle, attrs));
 				}
 			}
+		}
+
+		public void HandleMessage(IMessage msg)
+		{
+			MsgSpawnEntity spawn;
+
+			if(msg.Is<MsgSpawnEntity>(out spawn))
+			{
+				this.SpawnEntity(spawn.ID, spawn.TechnoType, spawn.Table);
+			}
+		}
+
+		private void SpawnEntity(string id, TechnoType type, IAttributeTable table)
+		{
+			var g = Game.Instance;
+			Blueprint bp;
+
+			switch(type)
+			{
+				case TechnoType.Vehicle:
+					bp = g.GetUnitType(id);
+					Registry.Spawn(bp, table);
+					break;
+				case TechnoType.Terrain:
+					bp = g.GetTerrainType(id, this.theater);
+					var eid = Registry.Spawn(bp, table);
+					this.TryPlace(eid);
+					break;
+				default:
+					throw new Exception("Not implemented");
+			}
+
+			g.Log("Spawned {0}\n{1}", id, table);
 		}
 
 		public static Map Read(Stream stream, AssetManager assets)

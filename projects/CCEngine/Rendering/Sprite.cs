@@ -9,31 +9,6 @@ namespace CCEngine.Rendering
 {
 	public class Sprite
 	{
-		/*
-		private static byte[] FromFrame(byte[] frame, int frame_w, int frame_h,
-			bool power_of_two, out Vector2 image_size)
-		{
-			int tile_w = frame_w;
-			int tile_h = frame_h;
-
-			if (power_of_two)
-			{
-				tile_w = Helpers.NextPowerOfTwo(frame_w);
-				tile_h = Helpers.NextPowerOfTwo(frame_h);
-
-				byte[] tile = new byte[tile_w * tile_h];
-				for (int h = 0; h < frame_h; h++)
-				{
-					Array.Copy(frame, h * frame_w, tile, h * tile_w, frame_w);
-				}
-				frame = tile;
-			}
-
-			image_size = new Vector2(tile_w, tile_h);
-			return frame;
-		}
-		*/
-
 		private static byte[] Arrange(byte[][] frames, int frame_w, int frame_h,
 			int tile_w, int tile_h, int image_nw, int image_nh, out Vector2 image_size)
 		{
@@ -83,21 +58,25 @@ namespace CCEngine.Rendering
 
 		public static Vector4 DefaultRegion = new Vector4(0, 0, 1, 1);
 
-		private readonly Vector2 image_pixsz;
-		private readonly Vector2 frame_pixsz;
-		private readonly Vector4[] frame_regions;
+		private readonly Vector2 image_pixels;
+		private readonly Vector2 frame_pixels;
+		//private readonly Vector4[] frame_regions;
 		private readonly Palette palette;
 		private readonly int nframes;
 		private byte[] buffer;
 		private Texture texture;
+		private int nframes_w;
+		private float frame_texw;
+		private float frame_texh;
 
 		public int FrameCount { get { return nframes; } }
-		public Vector2 ImagePixels { get { return image_pixsz; } }
-		public Vector2 FramePixels { get { return frame_pixsz; } }
+		public Vector2 ImagePixels { get { return image_pixels; } }
+		public Vector2 FramePixels { get { return frame_pixels; } }
 		public Palette Palette { get { return palette; } }
 		public byte[] Buffer { get { return buffer; } }
 		public bool IsBuffered { get { return buffer != null; } }
 
+		/*
 		private Vector4[] MakeRegions(int nframes, int nframes_w, float xratio, float yratio)
 		{
 			Vector4[] regions = new Vector4[nframes];
@@ -109,48 +88,49 @@ namespace CCEngine.Rendering
 			}
 			return regions;
 		}
+		*/
 
 		public Sprite(byte[] frame, int frame_w, int frame_h, Palette palette = null)
 		{
 			this.nframes     = 1;
 			this.palette     = palette;
-			this.frame_pixsz  = new Vector2(frame_w, frame_h);
-			this.image_pixsz  = new Vector2(frame_w, frame_h);
+			this.frame_pixels = new Vector2(frame_w, frame_h);
+			this.image_pixels = new Vector2(frame_w, frame_h);
 			this.buffer      = frame;
-			this.frame_regions = MakeRegions(1, 1, 1, 1);
+			this.nframes_w   = 1;
+			this.frame_texw  = 1;
+			this.frame_texh  = 1;
 		}
 
 		public Sprite(byte[][] frames, int frame_w, int frame_h, Palette palette = null)
 		{
 			this.nframes     = frames.Length;
 			this.palette     = palette;
-			this.frame_pixsz  = new Vector2(frame_w, frame_h);
-			this.buffer      = Arrange(frames, frame_w, frame_h, false, out this.image_pixsz);
-			this.frame_regions = MakeRegions(nframes,
-				(int)(image_pixsz.X / frame_pixsz.X),
-				frame_pixsz.X / image_pixsz.X,
-				frame_pixsz.Y / image_pixsz.Y);
+			this.frame_pixels = new Vector2(frame_w, frame_h);
+			this.buffer      = Arrange(frames, frame_w, frame_h, false, out this.image_pixels);
+			this.nframes_w   = (int)(image_pixels.X / frame_pixels.X);
+			this.frame_texw  = frame_pixels.X / image_pixels.X;
+			this.frame_texh  = frame_pixels.Y / image_pixels.Y;
 		}
 
 		public Sprite(byte[][] frames, int frame_w, int frame_h,
 			int image_nw, int image_nh, Palette palette = null)
 		{
-			this.nframes = frames.Length;
-			this.palette = palette;
-			this.frame_pixsz = new Vector2(frame_w, frame_h);
-			this.buffer = Arrange(frames, frame_w, frame_h, frame_w, frame_h,
-				image_nw, image_nh, out this.image_pixsz);
-			this.frame_regions = MakeRegions(nframes,
-				(int)(image_pixsz.X / frame_pixsz.X),
-				frame_pixsz.X / image_pixsz.X,
-				frame_pixsz.Y / image_pixsz.Y);
+			this.nframes     = frames.Length;
+			this.palette     = palette;
+			this.frame_pixels = new Vector2(frame_w, frame_h);
+			this.buffer      = Arrange(frames, frame_w, frame_h, frame_w, frame_h,
+				image_nw, image_nh, out this.image_pixels);
+			this.nframes_w   = (int)(image_pixels.X / frame_pixels.X);
+			this.frame_texw  = frame_pixels.X / image_pixels.X;
+			this.frame_texh  = frame_pixels.Y / image_pixels.Y;
 		}
 
 		public Texture ToTexture(bool discard_buffer = false)
 		{
 			if (IsBuffered && texture == null)
 			{
-				texture = new Texture(buffer, (int)image_pixsz.X, (int)image_pixsz.Y,
+				texture = new Texture(buffer, (int)image_pixels.X, (int)image_pixels.Y,
 					PixelType.UnsignedByte,
 					PixelFormat.Red,
 					PixelInternalFormat.R8,
@@ -166,7 +146,7 @@ namespace CCEngine.Rendering
 			if (!IsBuffered)
 				return null;
 			GCHandle handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-			Bitmap bmp = new Bitmap((int)image_pixsz.X, (int)image_pixsz.Y, (int)image_pixsz.X,
+			Bitmap bmp = new Bitmap((int)image_pixels.X, (int)image_pixels.Y, (int)image_pixels.X,
 				System.Drawing.Imaging.PixelFormat.Format8bppIndexed, handle.AddrOfPinnedObject());
 			handle.Free();
 
@@ -186,7 +166,34 @@ namespace CCEngine.Rendering
 
 		public Vector4 GetFrameRegion(int framenum)
 		{
-			return frame_regions[framenum % nframes];
+			framenum %= nframes;
+			int x = framenum % this.nframes_w;
+			int y = framenum / this.nframes_w;
+			float texw = this.frame_texw;
+			float texh = this.frame_texh;
+			return new Vector4(x * texw, y * texh, texw, texh);
+		}
+
+		public Vector4 GetFrameRegion(int framenum, int tilenum)
+		{
+			framenum %= nframes;
+			int x = framenum % this.nframes_w;
+			int y = framenum / this.nframes_w;
+			float texw = this.frame_texw;
+			float texh = this.frame_texh;
+
+			int ntiles_w = (int)(this.frame_pixels.X / (float)Constants.TileSize);
+			int ntiles_h = (int)(this.frame_pixels.Y / (float)Constants.TileSize);
+			int tilex = tilenum % ntiles_w;
+			int tiley = tilenum / ntiles_w;
+			float tiletexw = (float)Constants.TileSize / this.image_pixels.X;
+			float tiletexh = (float)Constants.TileSize / this.image_pixels.Y;
+			return new Vector4(
+				x * texw + tilex * tiletexw,
+				y * texh + tiley * tiletexh,
+				tiletexw,
+				tiletexh
+			);
 		}
 	}
 

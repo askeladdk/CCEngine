@@ -29,6 +29,19 @@ namespace CCEngine
 			}
 		}
 
+		public MPos(CPos cpos, bool centered = false)
+		{
+			this.x = cpos.X * Constants.TileSize;
+			this.y = cpos.Y * Constants.TileSize;
+			this.z = 0;
+
+			if (centered)
+			{
+				this.x += Constants.TileSize / 2;
+				this.y += Constants.TileSize / 2;
+			}
+		}
+
 		public MPos(int x, int y, int z)
 		{
 			this.x = x;
@@ -49,12 +62,31 @@ namespace CCEngine
 			return new MPos(this.x + x, this.y + y, this.z + z);
 		}
 
-		public float Distance(MPos other)
+		public MPos Difference(MPos rhs)
 		{
-			var dx = this.x - other.x;
-			var dy = this.y - other.y;
-			var dz = this.z - other.z;
-			return (float)Math.Sqrt(dx * dx + dy * dy + dz * dz);
+			return new MPos(this.x - rhs.x, this.y - rhs.y, this.z - rhs.z);
+		}
+
+		public int LengthSquared()
+		{
+			return x * x + y * y + z * z;
+		}
+
+		public static MPos Difference(MPos lhs, MPos rhs)
+		{
+			return new MPos(
+				lhs.x - rhs.x,
+				lhs.y - rhs.y,
+				lhs.z - rhs.z
+			);
+		}
+
+		public static int DistanceSquared(MPos lhs, MPos rhs)
+		{
+			var dx = lhs.x - rhs.x;
+			var dy = lhs.y - rhs.y;
+			var dz = lhs.z - rhs.z;
+			return dx * dx + dy * dy + dz * dz;
 		}
 
 		public override string ToString()

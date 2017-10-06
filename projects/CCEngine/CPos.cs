@@ -8,21 +8,21 @@ namespace CCEngine
 	/// </summary>
 	public struct CPos : IEquatable<CPos>
 	{
-		private readonly int x, y;
+		private readonly short x, y;
 
-		public int X { get { return x; } }
-		public int Y { get { return y; } }
+		public short X { get { return x; } }
+		public short Y { get { return y; } }
 
 		public CPos(int x, int y)
 		{
-			this.x = x;
-			this.y = y;
+			this.x = (short)x;
+			this.y = (short)y;
 		}
 
 		public CPos(ushort cellId)
 		{
-			this.x = cellId % Constants.MapSize;
-			this.y = cellId / Constants.MapSize;
+			this.x = (short)(cellId % Constants.MapSize);
+			this.y = (short)(cellId / Constants.MapSize);
 		}
 
 		public MPos ToMPos()
@@ -34,9 +34,9 @@ namespace CCEngine
 			);
 		}
 
-		public int CellId
+		public ushort CellId
 		{
-			get { return y * Constants.MapSize + x; }
+			get { return CPos.MakeCellId(x, y); }
 		}
 
 		public CPos Translate(int dx, int dy)
@@ -44,11 +44,16 @@ namespace CCEngine
 			return new CPos(x + dx, y + dy);
 		}
 
-		public float Distance(CPos other)
+		public static int DistanceSquared(CPos lhs, CPos rhs)
 		{
-			var dx = this.x - other.x;
-			var dy = this.y - other.y;
-			return (float)Math.Sqrt(dx * dx + dy * dy);
+			var dx = lhs.x - rhs.x;
+			var dy = lhs.y - rhs.y;
+			return dx * dx + dy * dy;
+		}
+
+		public static ushort MakeCellId(int x, int y)
+		{
+			return (ushort)(y * Constants.MapSize + x);
 		}
 
 		public override string ToString()
@@ -85,19 +90,6 @@ namespace CCEngine
 		public static bool operator!=(CPos lhs, CPos rhs)
 		{
 			return lhs.x != rhs.x || lhs.y != rhs.y;
-		}
-	}
-
-	public static class RectangleExt
-	{
-		public static bool Contains(this Rectangle rect, CPos cpos)
-		{
-			return rect.Contains(cpos.X, cpos.Y);
-		}
-
-		public static bool Contains(this Rectangle rect, MPos mpos)
-		{
-			return rect.Contains(mpos.XProj2D, mpos.YProj2D);
 		}
 	}
 }

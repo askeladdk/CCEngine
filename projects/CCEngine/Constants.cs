@@ -7,11 +7,11 @@ namespace CCEngine
 		// Updates per second.
 		public const int FrameRate = 15;
 
-		// Map width and height in cells.
+		// Map width/height in cells.
 		public const int MapSize = 128;
 		
-		// Total cells in map.
-		public const int MapCells = MapSize * MapSize;
+		// Total number of cells in map.
+		public const int MapCellCount = MapSize * MapSize;
 	
 		// Map tile width and height in pixels.
 		public const int TileSize = 24;

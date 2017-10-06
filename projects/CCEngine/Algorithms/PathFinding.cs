@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using CCEngine.Collections;
+using CCEngine.Simulation;
 
 namespace CCEngine.Algorithms
 {
 	public interface IGrid
 	{
-		IEnumerable<Tuple<CPos, int>> GetPassableNeighbors(CPos cpos);
+		IEnumerable<Tuple<CPos, int>> GetPassableNeighbors(MovementZone mz, CPos cpos);
 	}
 
 	/// <summary>
@@ -22,34 +23,39 @@ namespace CCEngine.Algorithms
 			return Math.Abs(goal.X - cpos.X) + Math.Abs(goal.Y - cpos.Y);
 		}
 
-		public static IEnumerable<CPos> AStar(IGrid grid, CPos start, CPos goal)
+		/// <summary>
+		/// Attempts to find a path from start to goal.
+		/// </summary>
+		/// <param name="grid"></param>
+		/// <param name="start"></param>
+		/// <param name="goal"></param>
+		/// <returns>The path in reverse or null.</returns>
+		public static IEnumerable<CPos> AStar(IGrid grid, CPos start, CPos goal, MovementZone mz)
 		{
 			var frontier = PriorityQueue.Min<int, CPos>();
 			var cameFrom = new Dictionary<CPos, CPos>();
 			var costSoFar = new Dictionary<CPos, int>();
 
-			// Search from goal to start so that the path doesn't need to be reversed.
-			cameFrom[goal] = goal;
-			costSoFar[goal] = 0;
-			frontier.Enqueue(ManhattanDistance(start, goal), goal);
+			cameFrom[start] = start;
+			costSoFar[start] = 0;
+			frontier.Enqueue(ManhattanDistance(goal, start), start);
 
 			CPos current;
 			while (frontier.TryDequeue(out current))
 			{
 				// Path found.
-				if (current == start)
+				if (current == goal)
 				{
-					while(current != goal)
+					while(current != start)
 					{
 						yield return current;
 						current = cameFrom[current];
 					}
-					yield return current;
 					yield break;
 				}
 
 				// Explore all passable adjacent nodes.
-				foreach (var neighbor in grid.GetPassableNeighbors(current))
+				foreach (var neighbor in grid.GetPassableNeighbors(mz, current))
 				{
 					var next = neighbor.Item1;
 					var cost = neighbor.Item2;
@@ -57,7 +63,7 @@ namespace CCEngine.Algorithms
 
 					if (!costSoFar.ContainsKey(next) || newCost < costSoFar[next])
 					{
-						var priority = newCost + ManhattanDistance(start, next);
+						var priority = newCost + ManhattanDistance(goal, next);
 						cameFrom[next] = current;
 						costSoFar[next] = newCost;
 						frontier.Enqueue(priority, next);

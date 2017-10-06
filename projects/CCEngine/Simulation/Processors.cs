@@ -40,6 +40,7 @@ namespace CCEngine.Simulation
 		{
 			var game = Game.Instance;
 			var pose = Registry.GetComponent<CPose>(entityId);
+			pose.Facing = Facing.Between(pose.CenterLocation, game.mousePos);
 			var animation = Registry.GetComponent<CAnimation>(entityId);
 			animation.NextFrame(game.GlobalClock, pose.Facing);
 		}
@@ -94,20 +95,15 @@ namespace CCEngine.Simulation
 			var animation = Registry.GetComponent<CAnimation>(entityId);
 
 			var location = pose.Location;
+			var bb = animation.AABB.Translate(location);
 
-			if( objectBounds.Contains(location) )
+			if (objectBounds.IntersectsWith(bb))
 			{
 				var p = camera.MapToScreenCoord(location);
-				float x = p.X;
-				float y = p.Y;
-				if(pose.Centered)
-				{
-					x -= animation.Sprite.FramePixels.X / 2;
-					y -= animation.Sprite.FramePixels.Y / 2;
-				}
+				p.Offset(animation.AABB.Location);
 				batch
 					.SetSprite(animation.Sprite)
-					.Render(animation.Frame, 0, x, y);
+					.Render(animation.Frame, 0, p.X, p.Y);
 			}
 		}
 

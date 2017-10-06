@@ -36,6 +36,8 @@ namespace CCEngine
 		private SpriteBatch batch;
 		private Camera camera = new Camera();
 
+		public MPos mousePos;
+
 		public static Game Instance { get { return instance; } }
 
 		public int GlobalClock { get { return this.globalClock; } }
@@ -104,6 +106,8 @@ namespace CCEngine
 			if (!this.logic.Update((float)e.Time))
 				this.Exit();
 			this.globalClock++;
+
+			this.Title = "CCEngine - FPS: {0}, Clock: {1}".F((int)this.UpdateFrequency, this.globalClock);
 		}
 
 		protected override void OnRenderFrame(FrameEventArgs e)

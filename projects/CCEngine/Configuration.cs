@@ -34,7 +34,18 @@ namespace CCEngine
 		public float GetFloat(string section, string key, float otherwise = 0.0f)
 		{
 			float n;
-			return float.TryParse(GetString(section, key), out n) ? n : otherwise;
+			string s = GetString(section, key);
+			if (s == null)
+				return otherwise;
+			// percentage
+			if(s[s.Length - 1] == '%')
+			{
+				s = s.Substring(0, s.Length - 1);
+				if(float.TryParse(s, out n))
+					return 0.01f * n;
+				return otherwise;
+			}
+			return float.TryParse(s, out n) ? n : otherwise;
 		}
 
 		public bool GetBool(string section, string key, bool otherwise = false)

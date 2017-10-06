@@ -57,12 +57,16 @@
     <Compile Include="ECS\Processor.cs" />
     <Compile Include="ECS\Registry.cs" />
     <Compile Include="GameRules.cs" />
+    <Compile Include="RectangleExt.cs" />
     <Compile Include="Rendering\Sequence.cs" />
     <Compile Include="Collections\OrderedDictionary.cs" />
     <Compile Include="Rendering\FrameBuffer.cs" />
     <Compile Include="CPos.cs" />
     <Compile Include="Simulation\Components.cs" />
     <Compile Include="Facing.cs" />
+    <Compile Include="Simulation\Land.cs" />
+    <Compile Include="Simulation\MapCell.cs" />
+    <Compile Include="Simulation\MovementZone.cs" />
     <Compile Include="Simulation\Processors.cs" />
     <Compile Include="Simulation\SpriteArt.cs" />
     <Compile Include="Simulation\Map.cs" />
@@ -102,6 +106,8 @@
     <Compile Include="Rendering\SpriteBatch.cs" />
     <Compile Include="Camera.cs" />
     <Compile Include="Simulation\Foundation.cs" />
+    <Compile Include="Simulation\StructureGrid.cs" />
+    <Compile Include="Simulation\TechnoType.cs" />
     <Compile Include="Simulation\Theater.cs" />
     <Compile Include="MPos.cs" />
     <Compile Include="VFS\VFS.cs" />

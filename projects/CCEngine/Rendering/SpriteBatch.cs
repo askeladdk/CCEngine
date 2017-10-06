@@ -164,6 +164,26 @@ namespace CCEngine.Rendering
 			return this;
 		}
 
+		public SpriteBatch RenderTile(int frame, int tile, float x, float y)
+		{
+			if (!drawing)
+				throw new Exception("SpriteBatch.Begin() must be called before Draw()");
+			if (sprite == null)
+				throw new Exception("SpriteBatch.Draw() has no sprite to draw");
+			if (count == batch.Length)
+				Flush();
+			batch[count++] = new SpriteInstance
+			{
+				color = this.color,
+				tile_xy = new Vector2(x, y),
+				tile_wh = new Vector2(Constants.TileSize, Constants.TileSize),
+				frame_xywh = sprite.GetFrameRegion(frame, tile),
+				remap = 0.0f,
+				cloak = 0.0f,
+			};
+			return this;
+		}
+
 		public SpriteBatch Render(float x, float y)
 		{
 			if (!drawing)

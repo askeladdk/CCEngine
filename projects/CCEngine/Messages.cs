@@ -2,6 +2,8 @@
 using OpenTK;
 using OpenTK.Input;
 using CCEngine;
+using CCEngine.ECS;
+using CCEngine.Simulation;
 
 namespace CCEngine
 {
@@ -95,18 +97,26 @@ namespace CCEngine
 
 	public class MsgSpawnEntity : IMessage
 	{
-		public int entityId;
+		private string id;
+		private TechnoType technoType;
+		private IAttributeTable table;
+
+		public string ID { get { return this.id; } }
+		public TechnoType TechnoType { get { return this.technoType; } }
+		public IAttributeTable Table { get { return this.table; } }
 
 		public int LogLevel { get { return Logger.DEBUG; } }
 
-		public MsgSpawnEntity(int entityId)
+		public MsgSpawnEntity(string id, TechnoType technoType, IAttributeTable table)
 		{
-			this.entityId = entityId;
+			this.id = id;
+			this.technoType = technoType;
+			this.table = table;
 		}
 
 		public override string ToString()
 		{
-			return "Entity #{0} spawned".F(entityId);
+			return "Spawn ({0})".F(this.id);
 		}
 	}
 
