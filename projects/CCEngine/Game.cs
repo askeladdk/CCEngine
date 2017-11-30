@@ -34,8 +34,7 @@ namespace CCEngine
 		private static Game instance;
 		private Matrix4 projection;
 		private SpriteBatch batch;
-		private Camera camera = new Camera();
-
+		private Camera camera;
 		public MPos mousePos;
 
 		public static Game Instance { get { return instance; } }
@@ -70,6 +69,8 @@ namespace CCEngine
 			this.logic = new Logic.GameLogic(this);
 			this.bus.Subscribe(this.logger);
 			this.bus.Subscribe(this.logic);
+
+			this.camera = new Camera(this.Width / (float)width);
 		}
 
 		public void Initialise()
@@ -87,15 +88,18 @@ namespace CCEngine
 
 		protected override void OnResize(EventArgs e)
 		{
+			var dpiScale = this.camera.DpiScale;
+			var unscaledw = (int)(ClientRectangle.Width / dpiScale);
+			var unscaledh = (int)(ClientRectangle.Height / dpiScale);
 			base.OnResize(e);
-			GL.Viewport(ClientRectangle.X, ClientRectangle.Y, ClientRectangle.Width, ClientRectangle.Height);
+			GL.Viewport(ClientRectangle);
 			this.projection = Matrix4.CreateOrthographicOffCenter(
-				0, ClientRectangle.Width, ClientRectangle.Height, 0, -1, 1);
+				0, unscaledw, unscaledh, 0, -1, 1);
 			this.camera.ViewPort = new System.Drawing.Rectangle(
 				0,
 				Constants.HUDTopBarHeight,
-				ClientRectangle.Width - Constants.HUDSideBarWidth,
-				ClientRectangle.Height
+				unscaledw - Constants.HUDSideBarWidth,
+				unscaledh
 			);
 		}
 

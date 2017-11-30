@@ -9,14 +9,22 @@ namespace CCEngine
 		private Rectangle viewPort = new Rectangle(); // viewable area in screen space
 		private Point topLeft = new Point();  // top left in map space
 		private Rectangle mapBounds = new Rectangle();
+		private float dpiScale;
 
 		public Point TopLeft { get { return topLeft; } }
+
+		public float DpiScale { get {return dpiScale; } }
 
 		public Rectangle ViewPort
 		{
 			get
 			{
-				return viewPort;
+				return new Rectangle(
+					(int)(dpiScale * viewPort.X),
+					(int)(dpiScale * viewPort.Y),
+					(int)(dpiScale * viewPort.Width),
+					(int)(dpiScale * viewPort.Height)
+				);
 			}
 
 			set
@@ -25,14 +33,9 @@ namespace CCEngine
 			}
 		}
 
-		public Camera()
+		public Camera(float dpiScale)
 		{
-			// nothing.
-		}
-
-		public Camera(int ofsx, int ofsy, int vieww, int viewh)
-		{
-			viewPort = new Rectangle(ofsx, ofsy, vieww, viewh);
+			this.dpiScale = dpiScale;
 		}
 
 		public void SetTopLeft(int mapX, int mapY)
@@ -64,10 +67,12 @@ namespace CCEngine
 
 		public MPos ScreenToMapCoord(Point mouse)
 		{
-			if (!viewPort.Contains(mouse))
+			var mx = (int)(mouse.X / dpiScale);
+			var my = (int)(mouse.Y / dpiScale);
+			if (!viewPort.Contains(mx, my))
 				return new MPos(-1, -1, 0);
-			int x = mouse.X - viewPort.X + topLeft.X;
-			int y = mouse.Y - viewPort.Y + topLeft.Y;
+			var x = mx - viewPort.X + topLeft.X;
+			var y = my - viewPort.Y + topLeft.Y;
 			return new MPos(x, y, 0);
 		}
 
