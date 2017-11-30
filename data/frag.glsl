@@ -21,8 +21,8 @@ void main()
 {
 	float remap = in_FragExtra.x * remaps;
 	float cloak = in_FragExtra.y;
-	float idx   = texture2D(sprite, in_FragUV).r;
-	vec4 color  = texture2D(palette, vec2(idx, remap));
+	float idx   = texture(sprite, in_FragUV).r;
+	vec4 color  = texture(palette, vec2(idx, remap));
 
 	if(idx == shadow_idx)
 	{

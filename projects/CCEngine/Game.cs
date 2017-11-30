@@ -91,7 +91,7 @@ namespace CCEngine
 			GL.Viewport(ClientRectangle.X, ClientRectangle.Y, ClientRectangle.Width, ClientRectangle.Height);
 			this.projection = Matrix4.CreateOrthographicOffCenter(
 				0, ClientRectangle.Width, ClientRectangle.Height, 0, -1, 1);
-			this.camera.ViewPort = new Rectangle(
+			this.camera.ViewPort = new System.Drawing.Rectangle(
 				0,
 				Constants.HUDTopBarHeight,
 				ClientRectangle.Width - Constants.HUDSideBarWidth,
@@ -147,6 +147,7 @@ namespace CCEngine
 			this.bus.SendMessage(message);
 		}
 
+#if false
 		public Bitmap GrabScreenshot(bool flip = false)
 		{
 			if (GraphicsContext.CurrentContext == null)
@@ -161,6 +162,7 @@ namespace CCEngine
 				bmp.RotateFlip(RotateFlipType.RotateNoneFlipY);
 			return bmp;
 		}
+#endif
 
 		public void ScissorCamera()
 		{

@@ -30,7 +30,6 @@ namespace CCEngine.VFS
 				null,
 				0,
 				MemoryMappedFileAccess.Read,
-				null,
 				HandleInheritability.None,
 				false
 			);

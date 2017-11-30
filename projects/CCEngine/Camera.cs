@@ -71,6 +71,11 @@ namespace CCEngine
 			return new MPos(x, y, 0);
 		}
 
+		public MPos ScreenToMapCoord(OpenTK.Point mouse)
+		{
+			return ScreenToMapCoord(new Point(mouse.X, mouse.Y));
+		}
+
 		public Point MapToScreenCoord(int mapX, int mapY)
 		{
 			int x2 = mapX - topLeft.X + viewPort.X;

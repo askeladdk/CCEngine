@@ -1,10 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CCToolKit", "projects\CCToolKit\CCToolKit.csproj", "{64F073A2-BF1D-4B68-AAA7-44E850486D19}"
-EndProject
+# Visual Studio 15
+VisualStudioVersion = 15.0.26124.0
+MinimumVisualStudioVersion = 15.0.26124.0
+#Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CCToolKit", "projects\CCToolKit\CCToolKit.csproj", "{64F073A2-BF1D-4B68-AAA7-44E850486D19}"
+#EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CCEngine", "projects\CCEngine\CCEngine.csproj", "{14131115-B425-4D9F-BB3B-7CDD363DDB95}"
 EndProject
 Global

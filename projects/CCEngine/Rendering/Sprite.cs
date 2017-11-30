@@ -141,6 +141,7 @@ namespace CCEngine.Rendering
 			return texture;
 		}
 
+#if false
 		public Bitmap ToBitmap(Palette palette = null)
 		{
 			if (!IsBuffered)
@@ -163,6 +164,7 @@ namespace CCEngine.Rendering
 			}
 			return bmp;
 		}
+#endif
 
 		public Vector4 GetFrameRegion(int framenum)
 		{
