@@ -170,7 +170,7 @@ namespace CCEngine
 
 		public void ScissorCamera()
 		{
-			var viewPort = this.camera.ViewPort;
+			var viewPort = this.camera.ScaledViewPort;
 			GL.Scissor(
 				0,
 				ClientRectangle.Height - viewPort.Height,

@@ -19,17 +19,25 @@ namespace CCEngine
 		{
 			get
 			{
+				return viewPort;
+			}
+
+			set
+			{
+				viewPort = value;
+			}
+		}
+
+		public Rectangle ScaledViewPort
+		{
+			get
+			{
 				return new Rectangle(
 					(int)(dpiScale * viewPort.X),
 					(int)(dpiScale * viewPort.Y),
 					(int)(dpiScale * viewPort.Width),
 					(int)(dpiScale * viewPort.Height)
 				);
-			}
-
-			set
-			{
-				viewPort = value;
 			}
 		}
 
