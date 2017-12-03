@@ -9,11 +9,8 @@ namespace CCEngine
 		private Rectangle viewPort = new Rectangle(); // viewable area in screen space
 		private Point topLeft = new Point();  // top left in map space
 		private Rectangle mapBounds = new Rectangle();
-		private float dpiScale;
 
 		public Point TopLeft { get { return topLeft; } }
-
-		public float DpiScale { get {return dpiScale; } }
 
 		public Rectangle ViewPort
 		{
@@ -26,24 +23,6 @@ namespace CCEngine
 			{
 				viewPort = value;
 			}
-		}
-
-		public Rectangle ScaledViewPort
-		{
-			get
-			{
-				return new Rectangle(
-					(int)(dpiScale * viewPort.X),
-					(int)(dpiScale * viewPort.Y),
-					(int)(dpiScale * viewPort.Width),
-					(int)(dpiScale * viewPort.Height)
-				);
-			}
-		}
-
-		public Camera(float dpiScale)
-		{
-			this.dpiScale = dpiScale;
 		}
 
 		public void SetTopLeft(int mapX, int mapY)
@@ -73,10 +52,8 @@ namespace CCEngine
 			SetTopLeft(topLeft.X + dx, topLeft.Y + dy);
 		}
 
-		public MPos ScreenToMapCoord(Point mouse)
+		public MPos ScreenToMapCoord(int mx, int my)
 		{
-			var mx = (int)(mouse.X / dpiScale);
-			var my = (int)(mouse.Y / dpiScale);
 			if (!viewPort.Contains(mx, my))
 				return new MPos(-1, -1, 0);
 			var x = mx - viewPort.X + topLeft.X;
@@ -84,9 +61,14 @@ namespace CCEngine
 			return new MPos(x, y, 0);
 		}
 
+		public MPos ScreenToMapCoord(Point mouse)
+		{
+			return ScreenToMapCoord(mouse.X, mouse.Y);
+		}
+
 		public MPos ScreenToMapCoord(OpenTK.Point mouse)
 		{
-			return ScreenToMapCoord(new Point(mouse.X, mouse.Y));
+			return ScreenToMapCoord(mouse.X, mouse.Y);
 		}
 
 		public Point MapToScreenCoord(int mapX, int mapY)
@@ -95,14 +77,14 @@ namespace CCEngine
 			int y2 = mapY - topLeft.Y + viewPort.Y;
 			return new Point(x2, y2);
 		}
-
+#if false
 		public MPos ScreenToMapCoord(int screenX, int screenY)
 		{
 			int x = screenX + topLeft.X + viewPort.X;
 			int y = screenY + topLeft.Y + viewPort.Y;
 			return new MPos(x, y, 0);
 		}
-
+#endif
 		public Point MapToScreenCoord(Point coord)
 		{
 			return MapToScreenCoord(coord.X, coord.Y);
@@ -122,6 +104,8 @@ namespace CCEngine
 		{
 			var screenOffsetX = topLeft.X % Constants.TileSize;
 			var screenOffsetY = topLeft.Y % Constants.TileSize;
+			var edgeX = (topLeft.X + viewPort.Width) % Constants.TileSize;
+			var edgeY = (topLeft.Y + viewPort.Height) % Constants.TileSize;
 			screenTopLeft = new Point(
 				viewPort.X - screenOffsetX,
 				viewPort.Y - screenOffsetY
@@ -129,8 +113,8 @@ namespace CCEngine
 			cellBounds = new Rectangle(
 				topLeft.X / Constants.TileSize,
 				topLeft.Y / Constants.TileSize,
-				(viewPort.Width  / Constants.TileSize) + (screenOffsetX != 0 ? 1 : 0),
-				(viewPort.Height / Constants.TileSize) + (screenOffsetY != 0 ? 1 : 0)
+				(viewPort.Width  / Constants.TileSize) + ((screenOffsetX + edgeX) != 0 ? 1 : 0),
+				(viewPort.Height / Constants.TileSize) + ((screenOffsetY + edgeY) != 0 ? 1 : 0)
 			);
 		}
 

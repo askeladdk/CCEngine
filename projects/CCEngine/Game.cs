@@ -35,6 +35,7 @@ namespace CCEngine
 		private Matrix4 projection;
 		private SpriteBatch batch;
 		private Camera camera;
+		private Display display;
 		public MPos mousePos;
 
 		public static Game Instance { get { return instance; } }
@@ -46,6 +47,7 @@ namespace CCEngine
 		public Matrix4 Projection { get { return this.projection; } }
 		public SpriteBatch SpriteBatch { get { return this.batch; } }
 		public Camera Camera { get { return this.camera; } }
+		public Display Display { get { return this.display; } }
 
 		private Game(int width, int height,
 			GameWindowFlags flags = GameWindowFlags.Default,
@@ -70,7 +72,8 @@ namespace CCEngine
 			this.bus.Subscribe(this.logger);
 			this.bus.Subscribe(this.logic);
 
-			this.camera = new Camera(this.Width / (float)width);
+			this.camera = new Camera();
+			this.display = new Display(this.Width / (float)width, 640, 400);
 		}
 
 		public void Initialise()
@@ -88,18 +91,16 @@ namespace CCEngine
 
 		protected override void OnResize(EventArgs e)
 		{
-			var dpiScale = this.camera.DpiScale;
-			var unscaledw = (int)(ClientRectangle.Width / dpiScale);
-			var unscaledh = (int)(ClientRectangle.Height / dpiScale);
 			base.OnResize(e);
-			GL.Viewport(ClientRectangle);
+			GL.Viewport(this.display.UpdateViewPort(ClientRectangle));
+			var res = this.display.Resolution;
 			this.projection = Matrix4.CreateOrthographicOffCenter(
-				0, unscaledw, unscaledh, 0, -1, 1);
+				0, res.Width, res.Height, 0, -1, 1);
 			this.camera.ViewPort = new System.Drawing.Rectangle(
 				0,
 				Constants.HUDTopBarHeight,
-				unscaledw - Constants.HUDSideBarWidth,
-				unscaledh
+				res.Width - Constants.HUDSideBarWidth,
+				res.Height - Constants.HUDTopBarHeight
 			);
 		}
 
@@ -170,15 +171,10 @@ namespace CCEngine
 
 		public void ScissorCamera()
 		{
-			var viewPort = this.camera.ScaledViewPort;
-			GL.Scissor(
-				0,
-				ClientRectangle.Height - viewPort.Height,
-				viewPort.Width,
-				viewPort.Height - viewPort.Y
-			);
+			var v = this.camera.ViewPort;
+			var r = this.display.ScissorRectangle(0, 0, v.Width, v.Height);
+			GL.Scissor(r.X, r.Y, r.Width, r.Height);
 		}
-
 
 		public T LoadAsset<T>(string filename, bool cache = true, object parameters = null)
 			where T : class

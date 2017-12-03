@@ -45,27 +45,32 @@ namespace CCEngine.Logic
 			}
 			else if(message.Is<MsgMouseMove>(out mouseMove))
 			{
-				var mousePos = g.Camera.ScreenToMapCoord(mouseMove.e.Position);
-				g.mousePos = mousePos;
-				var mouseCell = mousePos.ToCPos();
-				if (mouseCell != pathGoal)
+				OpenTK.Point pos;
+				if(g.Display.NormaliseScreenPosition(mouseMove.e.Position, out pos))
 				{
-					this.pathGoal = mouseCell;
-					var map = g.Map;
-					var mz = MovementZone.Foot;
+					var mousePos = g.Camera.ScreenToMapCoord(pos);
+					//g.Log("Mouse pos={0}, cell={1}", pos, mousePos);
+					g.mousePos = mousePos;
+					var mouseCell = mousePos.ToCPos();
+					if (mouseCell != pathGoal)
+					{
+						this.pathGoal = mouseCell;
+						var map = g.Map;
+						var mz = MovementZone.Foot;
 
-					if (map.IsCellPassable(mz, pathGoal))
-					{
-						var watch = new Stopwatch();
-						watch.Start();
-						var path = PathFinding.AStar(Game.Instance.Map, pathStart, pathGoal, mz).ToArray();
-						watch.Stop();
-						g.Log("Path finding time: {0}, Facing: {1}".F(watch.Elapsed, Facing.Between(pathStart, pathGoal)));
-						map.PathHighLight = path;
-					}
-					else
-					{
-						map.PathHighLight = null;
+						if (map.IsCellPassable(mz, pathGoal))
+						{
+							var watch = new Stopwatch();
+							watch.Start();
+							var path = PathFinding.AStar(Game.Instance.Map, pathStart, pathGoal, mz).ToArray();
+							watch.Stop();
+							//g.Log("Path finding time: {0}, Facing: {1}".F(watch.Elapsed, Facing.Between(pathStart, pathGoal)));
+							map.PathHighLight = path;
+						}
+						else
+						{
+							map.PathHighLight = null;
+						}
 					}
 				}
 			}
@@ -73,8 +78,12 @@ namespace CCEngine.Logic
 			{
 				if (mouseButton.e.IsPressed)
 				{
-					this.pathStart = g.Camera.ScreenToMapCoord(mouseButton.e.Position).ToCPos();
-					g.Map.CellHighLight = pathStart;
+					OpenTK.Point pos;
+					if(g.Display.NormaliseScreenPosition(mouseButton.e.Position, out pos))
+					{
+						this.pathStart = g.Camera.ScreenToMapCoord(pos).ToCPos();
+						g.Map.CellHighLight = pathStart;
+					}
 				}
 			}
 			else
