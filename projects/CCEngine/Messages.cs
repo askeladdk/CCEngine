@@ -119,21 +119,4 @@ namespace CCEngine
 			return "Spawn ({0})".F(this.id);
 		}
 	}
-
-	public class MsgKillEntity : IMessage
-	{
-		public int entityId;
-
-		public int LogLevel { get { return Logger.DEBUG; } }
-
-		public MsgKillEntity(int entityId)
-		{
-			this.entityId = entityId;
-		}
-
-		public override string ToString()
-		{
-			return "Entity #{0} killed".F(entityId);
-		}
-	}
 }

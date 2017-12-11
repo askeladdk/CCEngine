@@ -14,7 +14,7 @@ namespace CCEngine.Simulation
 		//public Sprite Cameo { get { return cameo; } }
 		public IEnumerable<string> Animations { get { return sequence.Animations; } }
 
-		public int GetNextFrame(int globalClock, int facing, string animId)
+		public int GetNextFrame(int globalClock, BinaryAngle facing, string animId)
 		{
 			return sequence.GetNextFrame(globalClock, facing, animId);
 		}

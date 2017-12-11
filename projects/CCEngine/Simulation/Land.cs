@@ -59,17 +59,22 @@ namespace CCEngine.Simulation
 			}
 		}
 
-		public bool IsPassable(MovementZone z)
+		public float SpeedMultiplier(MovementZone z)
 		{
 			switch(z)
 			{
 				case MovementZone.None:
-					return false;
+					return 0.0f;
 				case MovementZone.Fly:
-					return true;
+					return 1.0f;
 				default:
-					return this.speeds[(int)z] > 0;
+					return this.speeds[(int)z];
 			}
+		}
+
+		public bool IsPassable(MovementZone z)
+		{
+			return SpeedMultiplier(z) > 0;
 		}
 
 		public bool IsBuildable

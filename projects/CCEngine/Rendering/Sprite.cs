@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Drawing;
+//using System.Drawing;
 using System.Runtime.InteropServices;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
@@ -10,7 +10,7 @@ namespace CCEngine.Rendering
 	public class Sprite
 	{
 		private static byte[] Arrange(byte[][] frames, int frame_w, int frame_h,
-			int tile_w, int tile_h, int image_nw, int image_nh, out Vector2 image_size)
+			int tile_w, int tile_h, int image_nw, int image_nh, out Size image_size)
 		{
 			byte[] buffer = new byte[tile_w * tile_h * image_nw * image_nh];
 			int image_w = image_nw * tile_w;
@@ -27,12 +27,12 @@ namespace CCEngine.Rendering
 				}
 			}
 
-			image_size = new Vector2(image_w, image_h);
+			image_size = new Size(image_w, image_h);
 			return buffer;
 		}
 
 		private static byte[] Arrange(byte[][] frames, int frame_w, int frame_h,
-			bool power_of_two, out Vector2 image_size)
+			bool power_of_two, out Size image_size)
 		{
 			// nr frames in width and height
 			int nframes = frames.Length;
@@ -58,8 +58,8 @@ namespace CCEngine.Rendering
 
 		public static Vector4 DefaultRegion = new Vector4(0, 0, 1, 1);
 
-		private readonly Vector2 image_pixels;
-		private readonly Vector2 frame_pixels;
+		private readonly Size image_size;
+		private readonly Size frame_size;
 		//private readonly Vector4[] frame_regions;
 		private readonly Palette palette;
 		private readonly int nframes;
@@ -70,8 +70,8 @@ namespace CCEngine.Rendering
 		private float frame_texh;
 
 		public int FrameCount { get { return nframes; } }
-		public Vector2 ImagePixels { get { return image_pixels; } }
-		public Vector2 FramePixels { get { return frame_pixels; } }
+		public Size ImageSize { get { return image_size; } }
+		public Size FrameSize { get { return frame_size; } }
 		public Palette Palette { get { return palette; } }
 		public byte[] Buffer { get { return buffer; } }
 		public bool IsBuffered { get { return buffer != null; } }
@@ -94,8 +94,8 @@ namespace CCEngine.Rendering
 		{
 			this.nframes     = 1;
 			this.palette     = palette;
-			this.frame_pixels = new Vector2(frame_w, frame_h);
-			this.image_pixels = new Vector2(frame_w, frame_h);
+			this.frame_size  = new Size(frame_w, frame_h);
+			this.image_size  = new Size(frame_w, frame_h);
 			this.buffer      = frame;
 			this.nframes_w   = 1;
 			this.frame_texw  = 1;
@@ -106,11 +106,11 @@ namespace CCEngine.Rendering
 		{
 			this.nframes     = frames.Length;
 			this.palette     = palette;
-			this.frame_pixels = new Vector2(frame_w, frame_h);
-			this.buffer      = Arrange(frames, frame_w, frame_h, false, out this.image_pixels);
-			this.nframes_w   = (int)(image_pixels.X / frame_pixels.X);
-			this.frame_texw  = frame_pixels.X / image_pixels.X;
-			this.frame_texh  = frame_pixels.Y / image_pixels.Y;
+			this.frame_size  = new Size(frame_w, frame_h);
+			this.buffer      = Arrange(frames, frame_w, frame_h, false, out this.image_size);
+			this.nframes_w   = image_size.Width / frame_size.Width;
+			this.frame_texw  = (float)frame_size.Width / image_size.Width;
+			this.frame_texh  = (float)frame_size.Height / image_size.Height;
 		}
 
 		public Sprite(byte[][] frames, int frame_w, int frame_h,
@@ -118,19 +118,19 @@ namespace CCEngine.Rendering
 		{
 			this.nframes     = frames.Length;
 			this.palette     = palette;
-			this.frame_pixels = new Vector2(frame_w, frame_h);
+			this.frame_size  = new Size(frame_w, frame_h);
 			this.buffer      = Arrange(frames, frame_w, frame_h, frame_w, frame_h,
-				image_nw, image_nh, out this.image_pixels);
-			this.nframes_w   = (int)(image_pixels.X / frame_pixels.X);
-			this.frame_texw  = frame_pixels.X / image_pixels.X;
-			this.frame_texh  = frame_pixels.Y / image_pixels.Y;
+				image_nw, image_nh, out this.image_size);
+			this.nframes_w   = image_size.Width / frame_size.Width;
+			this.frame_texw  = (float)frame_size.Width / image_size.Width;
+			this.frame_texh  = (float)frame_size.Height / image_size.Height;
 		}
 
 		public Texture ToTexture(bool discard_buffer = false)
 		{
 			if (IsBuffered && texture == null)
 			{
-				texture = new Texture(buffer, (int)image_pixels.X, (int)image_pixels.Y,
+				texture = new Texture(buffer, image_size.Width, image_size.Height,
 					PixelType.UnsignedByte,
 					PixelFormat.Red,
 					PixelInternalFormat.R8,
@@ -147,7 +147,7 @@ namespace CCEngine.Rendering
 			if (!IsBuffered)
 				return null;
 			GCHandle handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-			Bitmap bmp = new Bitmap((int)image_pixels.X, (int)image_pixels.Y, (int)image_pixels.X,
+			Bitmap bmp = new Bitmap(image_pixels.Width, image_pixels.Width, image_pixels.Width,
 				System.Drawing.Imaging.PixelFormat.Format8bppIndexed, handle.AddrOfPinnedObject());
 			handle.Free();
 
@@ -184,12 +184,12 @@ namespace CCEngine.Rendering
 			float texw = this.frame_texw;
 			float texh = this.frame_texh;
 
-			int ntiles_w = (int)(this.frame_pixels.X / (float)Constants.TileSize);
-			int ntiles_h = (int)(this.frame_pixels.Y / (float)Constants.TileSize);
+			int ntiles_w = this.frame_size.Width / Constants.TileSize;
+			int ntiles_h = this.frame_size.Height / Constants.TileSize;
 			int tilex = tilenum % ntiles_w;
 			int tiley = tilenum / ntiles_w;
-			float tiletexw = (float)Constants.TileSize / this.image_pixels.X;
-			float tiletexh = (float)Constants.TileSize / this.image_pixels.Y;
+			float tiletexw = (float)Constants.TileSize / this.image_size.Width;
+			float tiletexh = (float)Constants.TileSize / this.image_size.Height;
 			return new Vector4(
 				x * texw + tilex * tiletexw,
 				y * texh + tiley * tiletexh,

@@ -1,75 +1,44 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
 
 namespace CCEngine
 {
 	/// <summary>
 	/// Cell position.
 	/// </summary>
-	public struct CPos : IEquatable<CPos>
+	public struct CPos : IEquatable<CPos>, IComparable<CPos>
 	{
-		private readonly short x, y;
+		private ushort cellId;
 
-		public short X { get { return x; } }
-		public short Y { get { return y; } }
+		public int X { get => cellId % Constants.MapSize; }
+		public int Y { get => cellId / Constants.MapSize; }
+		public ushort CellId { get => cellId; }
+		public XPos XPos { get => new XPos(cellId); }
 
-		public CPos(int x, int y)
+		public CPos(int cx, int cy)
 		{
-			this.x = (short)x;
-			this.y = (short)y;
+			this.cellId = MakeCellId(cx, cy);
 		}
 
 		public CPos(ushort cellId)
 		{
-			this.x = (short)(cellId % Constants.MapSize);
-			this.y = (short)(cellId / Constants.MapSize);
-		}
-
-		public MPos ToMPos()
-		{
-			return new MPos(
-				this.x * Constants.TileSize,
-				this.y * Constants.TileSize,
-				0
-			);
-		}
-
-		public ushort CellId
-		{
-			get { return CPos.MakeCellId(x, y); }
+			this.cellId = cellId;
 		}
 
 		public CPos Translate(int dx, int dy)
 		{
-			return new CPos(x + dx, y + dy);
-		}
-
-		public static int DistanceSquared(CPos lhs, CPos rhs)
-		{
-			var dx = lhs.x - rhs.x;
-			var dy = lhs.y - rhs.y;
-			return dx * dx + dy * dy;
-		}
-
-		public static ushort MakeCellId(int x, int y)
-		{
-			return (ushort)(y * Constants.MapSize + x);
+			return new CPos((ushort)(this.cellId + dx + dy * Constants.MapSize));
 		}
 
 		public override string ToString()
 		{
-			return "({0}, {1})".F(x, y);
+			return "({0}, {1})".F(this.X, this.Y);
 		}
 
 		public override int GetHashCode()
 		{
-			unchecked
-			{
-				var hash = (int)2166136261;
-				hash = (16777619 * hash) ^ x.GetHashCode();
-				hash = (16777619 * hash) ^ y.GetHashCode();
-				return hash;
-			}
+			return cellId.GetHashCode();
 		}
 
 		public override bool Equals(object rhs)
@@ -84,12 +53,22 @@ namespace CCEngine
 
 		public static bool operator==(CPos lhs, CPos rhs)
 		{
-			return !(lhs.x != rhs.x || lhs.y != rhs.y);
+			return lhs.cellId == rhs.cellId;
 		}
 
 		public static bool operator!=(CPos lhs, CPos rhs)
 		{
-			return lhs.x != rhs.x || lhs.y != rhs.y;
+			return lhs.cellId != rhs.cellId;
+		}
+
+		public static ushort MakeCellId(int cx, int cy)
+		{
+			return (ushort)(cy * Constants.MapSize + cx);
+		}
+
+		int IComparable<CPos>.CompareTo(CPos other)
+		{
+			return this.cellId - other.cellId;
 		}
 	}
 }

@@ -155,8 +155,11 @@ namespace CCEngine.Rendering
 			batch[count++] = new SpriteInstance
 			{
 				color = this.color,
-				tile_xy = new Vector2(x, y),
-				tile_wh = sprite.FramePixels,
+				tile_xy = new Vector2(
+					x - this.sprite.FrameSize.Width / 2,
+					y - this.sprite.FrameSize.Height / 2
+				),
+				tile_wh = new Vector2(sprite.FrameSize.Width, sprite.FrameSize.Height),
 				frame_xywh = sprite.GetFrameRegion(frame),
 				remap = (float)remap,
 				cloak = cloak,
@@ -196,7 +199,7 @@ namespace CCEngine.Rendering
 			{
 				color = this.color, //unchecked((int)0xffffffff),
 				tile_xy = new Vector2(x, y),
-				tile_wh = sprite.ImagePixels,
+				tile_wh = new Vector2(sprite.ImageSize.Width, sprite.ImageSize.Height),
 				frame_xywh = Sprite.DefaultRegion,
 				remap = 0.0f,
 				cloak = 0.0f,

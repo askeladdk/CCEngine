@@ -36,18 +36,18 @@ namespace CCEngine
 		private SpriteBatch batch;
 		private Camera camera;
 		private Display display;
-		public MPos mousePos;
 
-		public static Game Instance { get { return instance; } }
+		public static Game Instance { get => instance; }
 
-		public int GlobalClock { get { return this.globalClock; } }
-		public Map Map { get { return this.map; } }
+		public int GlobalClock { get => this.globalClock; }
+		public Map Map { get => this.map; }
 
-		public VFS.VFS VFS { get { return this.vfs; } }
-		public Matrix4 Projection { get { return this.projection; } }
-		public SpriteBatch SpriteBatch { get { return this.batch; } }
-		public Camera Camera { get { return this.camera; } }
-		public Display Display { get { return this.display; } }
+		public VFS.VFS VFS { get => this.vfs; }
+		public Matrix4 Projection { get => this.projection; }
+		public SpriteBatch SpriteBatch { get => this.batch; }
+		public Camera Camera { get => this.camera; }
+		public Display Display { get => this.display; }
+		public ECS.Registry Registry { get => this.map.Registry; }
 
 		private Game(int width, int height,
 			GameWindowFlags flags = GameWindowFlags.Default,

@@ -130,8 +130,8 @@ namespace CCEngine.ECS
 			new Dictionary<int, Entity>();
 		private Queue<int> killQueue =
 			new Queue<int>();
-		private SortedSet<Processor> processors =
-			new SortedSet<Processor>();
+		private List<Processor> processors =
+			new List<Processor>();
 		private int idCounter = 0;
 
 		// Events.

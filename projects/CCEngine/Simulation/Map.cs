@@ -13,23 +13,21 @@ using OpenTK.Graphics.OpenGL;
 
 namespace CCEngine.Simulation
 {
-	public class Map : IGrid
+	public class Map : IGrid<MovementZone>
 	{
 		private readonly MapCell[] cells;
 		private readonly Rectangle bounds;
 		private readonly Theater theater;
 		private Registry registry;
+		private PRadioReceiver radiorec;
 
 		private Rectangle objectBounds;
-		private CPos cellHighlight = new CPos(0, 0);
-		private CPos[] pathHighlight;
+		public CPos cellHighlight = new CPos(0);
+		public CPos[] pathHighlight;
 
 		public Registry Registry { get { return registry; } }
 		public Rectangle Bounds { get { return bounds; } }
 		public Theater Theater { get { return theater; } }
-		public CPos CellHighLight { set { this.cellHighlight = value; } }
-		public CPos[] PathHighLight { set { this.pathHighlight = value; } }
-
 
 		private Map(IConfiguration cfg)
 		{
@@ -60,6 +58,9 @@ namespace CCEngine.Simulation
 			var registry = new Registry();
 			PAnimation.Attach(registry);
 			PRender.Attach(registry);
+			//PLocomotion.Attach(registry);
+			radiorec = PRadioReceiver.Attach(registry);
+			PRadio.Attach(registry);
 			return registry;
 		}
 
@@ -68,14 +69,14 @@ namespace CCEngine.Simulation
 			return cells[cellId];
 		}
 
-		public MapCell GetCell(int x, int y)
+		public MapCell GetCell(CPos cpos)
 		{
-			return this.GetCell(y * Constants.MapSize + x);
+			return cells[cpos.CellId];
 		}
 
 		public bool IsCellPassable(MovementZone mz, CPos cpos)
 		{
-			return this.GetCell(cpos.X, cpos.Y).IsPassable(mz);
+			return this.GetCell(cpos).IsPassable(mz);
 		}
 
 		public void Update(float dt)
@@ -89,8 +90,8 @@ namespace CCEngine.Simulation
 			if(!this.registry.TryGetComponent<CPlacement>(entityId, out placement))
 				return false;
 
-			var pose = this.registry.GetComponent<CPose>(entityId);
-			var center = pose.CellLocation.CellId;
+			var pose = this.registry.GetComponent<CLocomotion>(entityId);
+			var center = pose.Position.CellId;
 
 			var occupy = placement.OccupyGrid;
 			for (int i = 0; i < occupy.Length; i++)
@@ -102,22 +103,27 @@ namespace CCEngine.Simulation
 			return true;
 		}
 
+		public IEnumerable<CPos> GetPath(CPos start, CPos goal)
+		{
+			return PathFinding.AStar<MovementZone>(this, start, goal, MovementZone.Track);
+		}
+
 		#region IGrid
 
 		private static Tuple<int, int, int>[] cellOffsets =
 		{
 			// dx, dy, cost
-			Tuple.Create(-1, -1, 14),
 			Tuple.Create( 0, -1, 10),
 			Tuple.Create( 1, -1, 14),
-			Tuple.Create(-1,  0, 10),
+			Tuple.Create( 1,  0, 10),
 			Tuple.Create( 1,  1, 14),
 			Tuple.Create( 0,  1, 10),
 			Tuple.Create(-1,  1, 14),
-			Tuple.Create( 1,  0, 10),
+			Tuple.Create(-1,  0, 10),
+			Tuple.Create(-1, -1, 14),
 		};
 
-		IEnumerable<Tuple<CPos, int>> IGrid.GetPassableNeighbors(MovementZone mz, CPos cpos)
+		IEnumerable<Tuple<CPos, int>> IGrid<MovementZone>.GetPassableNeighbors(MovementZone mz, CPos cpos)
 		{
 			foreach(var co in cellOffsets)
 			{
@@ -174,18 +180,18 @@ namespace CCEngine.Simulation
 
 		public void RenderGround(SpriteBatch batch, Rectangle cellBounds, Point screenTopLeft)
 		{
-			int screenY = screenTopLeft.Y;
+			int screenY = screenTopLeft.Y + Constants.TileSizeHalf;
 			for (int y = cellBounds.Top; y < cellBounds.Bottom; y++)
 			{
-				int screenX = screenTopLeft.X;
+				int screenX = screenTopLeft.X + Constants.TileSizeHalf;
 				for (int x = cellBounds.Left; x < cellBounds.Right; x++)
 				{
 					var cpos = new CPos(x, y);
-					var cell = this.GetCell(x, y);
+					var cell = this.GetCell(cpos);
 					var landtype = cell.Land.Type;
 					bool highlight = false;
 
-					if(cpos.Equals(this.cellHighlight))
+					if(cpos == this.cellHighlight)
 					{
 						highlight = true;
 						batch.SetColor(OpenTK.Graphics.Color4.LightBlue);
@@ -348,7 +354,7 @@ namespace CCEngine.Simulation
 				{
 					var attrs = new AttributeTable
 					{
-						{"Pose.Location", new MPos(cell)},
+						{"Locomotion.Position", new XPos(cell)},
 					};
 					//var entityId = this.registry.Spawn(bp, attrs);
 					//this.TryPlace(entityId);
@@ -376,8 +382,8 @@ namespace CCEngine.Simulation
 				{
 					var attrs = new AttributeTable
 					{
-						{"Pose.Location", new MPos(cell)},
-						{"Pose.Facing", facing},
+						{"Locomotion.Position", new XPos(cell)},
+						{"Locomotion.Facing", new BinaryAngle(facing)},
 					};
 					//Game.Instance.Log(Logger.DEBUG, "Spawn {0}\n{1}", technoId, attrs);
 					//this.registry.Spawn(bp, attrs);
@@ -394,29 +400,32 @@ namespace CCEngine.Simulation
 			{
 				this.SpawnEntity(spawn.ID, spawn.TechnoType, spawn.Table);
 			}
+
+			this.radiorec.OnMessage(msg);
 		}
 
 		private void SpawnEntity(string id, TechnoType type, IAttributeTable table)
 		{
 			var g = Game.Instance;
+			int eid = 0;
 			Blueprint bp;
 
 			switch(type)
 			{
 				case TechnoType.Vehicle:
 					bp = g.GetUnitType(id);
-					Registry.Spawn(bp, table);
+					eid = Registry.Spawn(bp, table);
 					break;
 				case TechnoType.Terrain:
 					bp = g.GetTerrainType(id, this.theater);
-					var eid = Registry.Spawn(bp, table);
+					eid = Registry.Spawn(bp, table);
 					this.TryPlace(eid);
 					break;
 				default:
 					throw new Exception("Not implemented");
 			}
 
-			g.Log("Spawned {0}\n{1}", id, table);
+			g.Log("Spawned {0} ({1})\n{2}", id, eid, table);
 		}
 
 		public static Map Read(Stream stream, AssetManager assets)

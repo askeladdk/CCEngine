@@ -14,8 +14,6 @@ namespace CCEngine.Logic
 	class MainMenu : IGameState
 	{
 		private bool initialized;
-		private CPos pathGoal;
-		private CPos pathStart;
 
 		private void Initialize()
 		{
@@ -48,30 +46,7 @@ namespace CCEngine.Logic
 				OpenTK.Point pos;
 				if(g.Display.NormaliseScreenPosition(mouseMove.e.Position, out pos))
 				{
-					var mousePos = g.Camera.ScreenToMapCoord(pos);
-					//g.Log("Mouse pos={0}, cell={1}", pos, mousePos);
-					g.mousePos = mousePos;
-					var mouseCell = mousePos.ToCPos();
-					if (mouseCell != pathGoal)
-					{
-						this.pathGoal = mouseCell;
-						var map = g.Map;
-						var mz = MovementZone.Foot;
-
-						if (map.IsCellPassable(mz, pathGoal))
-						{
-							var watch = new Stopwatch();
-							watch.Start();
-							var path = PathFinding.AStar(Game.Instance.Map, pathStart, pathGoal, mz).ToArray();
-							watch.Stop();
-							//g.Log("Path finding time: {0}, Facing: {1}".F(watch.Elapsed, Facing.Between(pathStart, pathGoal)));
-							map.PathHighLight = path;
-						}
-						else
-						{
-							map.PathHighLight = null;
-						}
-					}
+					g.Map.cellHighlight = g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos;
 				}
 			}
 			else if(message.Is<MsgMouseButton>(out mouseButton))
@@ -81,8 +56,7 @@ namespace CCEngine.Logic
 					OpenTK.Point pos;
 					if(g.Display.NormaliseScreenPosition(mouseButton.e.Position, out pos))
 					{
-						this.pathStart = g.Camera.ScreenToMapCoord(pos).ToCPos();
-						g.Map.CellHighLight = pathStart;
+						g.SendMessage(new MissionMove(28, g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos));
 					}
 				}
 			}

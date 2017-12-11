@@ -41,12 +41,12 @@ namespace CCEngine.Rendering
 			return sequences.ContainsKey(animId);
 		}
 
-		public int GetNextFrame(int globalClock, int facing, string animId)
+		public int GetNextFrame(int globalClock, BinaryAngle facing, string animId)
 		{
 			var seq = sequences[animId];
 			return
 				seq.offset
-				+ seq.stride * (seq.facings - 1 - Facing.Scale(facing, seq.facings))
+				+ seq.stride * ((seq.facings - facing.Scale(seq.facings)) % seq.facings)
 				+ (globalClock / seq.rate) % seq.framesPerFacing;
 		}
 	}

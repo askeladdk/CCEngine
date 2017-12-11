@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using CCEngine.Collections;
 using CCEngine.Simulation;
 
 namespace CCEngine.Algorithms
 {
-	public interface IGrid
+	public interface IGrid<PathConstraints>
 	{
-		IEnumerable<Tuple<CPos, int>> GetPassableNeighbors(MovementZone mz, CPos cpos);
+		IEnumerable<Tuple<CPos, int>> GetPassableNeighbors(PathConstraints pc, CPos cpos);
 	}
 
 	/// <summary>
@@ -30,7 +31,8 @@ namespace CCEngine.Algorithms
 		/// <param name="start"></param>
 		/// <param name="goal"></param>
 		/// <returns>The path in reverse or null.</returns>
-		public static IEnumerable<CPos> AStar(IGrid grid, CPos start, CPos goal, MovementZone mz)
+		public static IEnumerable<CPos> AStar<PathConstraints>(
+			IGrid<PathConstraints> grid, CPos start, CPos goal, PathConstraints pc)
 		{
 			var frontier = PriorityQueue.Min<int, CPos>();
 			var cameFrom = new Dictionary<CPos, CPos>();
@@ -51,11 +53,12 @@ namespace CCEngine.Algorithms
 						yield return current;
 						current = cameFrom[current];
 					}
+					yield return start;
 					yield break;
 				}
 
 				// Explore all passable adjacent nodes.
-				foreach (var neighbor in grid.GetPassableNeighbors(mz, current))
+				foreach (var neighbor in grid.GetPassableNeighbors(pc, current))
 				{
 					var next = neighbor.Item1;
 					var cost = neighbor.Item2;
@@ -73,6 +76,34 @@ namespace CCEngine.Algorithms
 
 			// No path found.
 			yield break;
+		}
+
+		public static IEnumerable<CardinalDirection> ConvertPathToDirections(
+			IEnumerable<CPos> path)
+		{
+			if(!path.Any())
+				yield break;
+			var last = path.First();
+			foreach(var cell in path.Skip(1))
+			{
+				var angle = BinaryAngle.Between(last.X, last.Y, cell.X, cell.Y);
+				last = cell;
+				yield return angle.CardinalDirection;
+			}
+		}
+
+		public static IEnumerable<Vector2I> PathToVectors(
+			IEnumerable<CPos> path)
+		{
+			if(!path.Any())
+				yield break;
+			var last = path.First();
+			foreach(var cell in path.Skip(1))
+			{
+				var v = new Vector2I(cell.X - last.X, cell.Y - last.Y);
+				last = cell;
+				yield return v;
+			}
 		}
 	}
 }

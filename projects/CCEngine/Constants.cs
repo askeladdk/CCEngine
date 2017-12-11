@@ -15,6 +15,7 @@ namespace CCEngine
 	
 		// Map tile width and height in pixels.
 		public const int TileSize = 24;
+		public const int TileSizeHalf = TileSize / 2;
 
 		// Number of house color remaps in palette.cps.
 		public const int HouseColors = 8;

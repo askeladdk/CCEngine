@@ -91,9 +91,6 @@ namespace CCEngine
 			var occupyGridId = artcfg.GetString(id, "Occupy", "DefaultGrid");
 			var overlapGridId = artcfg.GetString(id, "Overlap", "DefaultGrid");
 
-			var centerOffsetX = (int)spr.FramePixels.X / 2;
-			var centerOffsetY = (int)spr.FramePixels.Y / 2;
-
 			// Create blueprint.
 			var config = new AttributeTable
 			{
@@ -101,12 +98,12 @@ namespace CCEngine
 				{"Placement.Foundation", foundationId},
 				{"Placement.Occupy", occupyGridId},
 				{"Placement.Overlap", overlapGridId},
-				{"Pose.CenterOffsetX", centerOffsetX},
-				{"Pose.CenterOffsetY", centerOffsetY},
+				{"Animation.DrawOffsetX", (spr.FrameSize.Width - Constants.TileSize) / 2},
+				{"Animation.DrawOffsetY", (spr.FrameSize.Height - Constants.TileSize) / 2},
 			};
 
 			bp = new Blueprint(config,
-				typeof(CPose),
+				typeof(CLocomotion),
 				typeof(CAnimation),
 				typeof(CPlacement)
 			);
@@ -137,28 +134,25 @@ namespace CCEngine
 				spriteArts[artId] = new SpriteArt(spr, seq);
 			}
 
-			var centerOffsetX = artcfg.GetInt(artId, "CenterOffsetX");
-			var centerOffsetY = artcfg.GetInt(artId, "CenterOffsetY");
-			var drawOffsetX = artcfg.GetInt(artId, "DrawOffsetX");
-			var drawOffsetY = artcfg.GetInt(artId, "DrawOffsetY");
+			var mz = rulescfg.GetBool(id, "Tracked", false) ? MovementZone.Track : MovementZone.Wheel;
 
 			var config = new AttributeTable
 			{
 				{"Animation.Art", artId},
-				{"Animation.DrawOffsetX", drawOffsetX},
-				{"Animation.DrawOffsetY", drawOffsetY},
-				{"Pose.CenterOffsetX", centerOffsetX},
-				{"Pose.CenterOffsetY", centerOffsetY},
 				{"Name", rulescfg.GetString(id, "Name", id)},
-				{"Health.Strength", rulescfg.GetInt(id, "Strength", 0)},
+				{"Health.Strength", rulescfg.GetInt(id, "Strength", 1)},
 				{"Health.Armor", rulescfg.GetString(id, "Armor", "none")},
+				{"Locomotion.Speed", rulescfg.GetInt(id, "Speed", 1)},
+				{"Locomotion.MovementZone", mz},
+				{"Locomotion.Locomotor", "Drive"},
 			};
 
 			Log(Logger.DEBUG, "{0}:\n{1}", id, config);
 
 			bp = new Blueprint(config,
-				typeof(CPose),
-				typeof(CAnimation)
+				typeof(CLocomotion),
+				typeof(CAnimation),
+				typeof(CRadio)
 			);
 
 			blueprints[id] = bp;

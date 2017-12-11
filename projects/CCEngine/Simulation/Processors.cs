@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
 using CCEngine.Rendering;
 using CCEngine.ECS;
 
@@ -13,36 +14,22 @@ namespace CCEngine.Simulation
 			: base(registry)
 		{
 			this.filter = registry.Filter
-				.All(typeof(CPose), typeof(CAnimation));
+				.All(typeof(CLocomotion), typeof(CAnimation));
 		}
 
-		protected override IFilter Filter
-		{
-			get { return filter; }
-		}
+		protected override IFilter Filter { get => filter; }
 
-		public override bool IsActive
-		{
-			get { return true; }
-		}
+		public override bool IsActive { get => true; }
 
-		public override bool IsRenderLoop
-		{
-			get { return false; }
-		}
-
-		protected override int Priority
-		{
-			get { return 0; }
-		}
+		public override bool IsRenderLoop {get => false; }
 
 		protected override void Process(float dt, int entityId)
 		{
-			var game = Game.Instance;
-			var pose = Registry.GetComponent<CPose>(entityId);
-			pose.Facing = Facing.Between(pose.CenterLocation, game.mousePos);
-			var animation = Registry.GetComponent<CAnimation>(entityId);
-			animation.NextFrame(game.GlobalClock, pose.Facing);
+			var g = Game.Instance;
+			var loco = Registry.GetComponent<CLocomotion>(entityId);
+			var anim = Registry.GetComponent<CAnimation>(entityId);
+			loco.Process();
+			anim.NextFrame(g.GlobalClock, loco.Facing);
 		}
 
 		public static PAnimation Attach(Registry registry)
@@ -61,49 +48,37 @@ namespace CCEngine.Simulation
 			: base(registry)
 		{
 			this.filter = registry.Filter
-				.All(typeof(CPose), typeof(CAnimation));
+				.All(typeof(CLocomotion), typeof(CAnimation));
 		}
 
-		protected override IFilter Filter
-		{
-			get { return filter; }
-		}
+		protected override IFilter Filter { get => filter; }
 
-		public override bool IsActive
-		{
-			get { return true; }
-		}
+		public override bool IsActive { get => true; }
 
-		public override bool IsRenderLoop
-		{
-			get { return true; }
-		}
-
-		protected override int Priority
-		{
-			get { return 1; }
-		}
+		public override bool IsRenderLoop { get => true; }
 
 		protected override void Process(float dt, int entityId)
 		{
-			var game = Game.Instance;
-			var batch = game.SpriteBatch;
-			var camera = game.Camera;
-			var objectBounds = game.Map.ObjectBounds;
+			var g = Game.Instance;
+			var batch = g.SpriteBatch;
+			var camera = g.Camera;
+			var objectBounds = g.Map.ObjectBounds;
 
-			var pose = Registry.GetComponent<CPose>(entityId);
-			var animation = Registry.GetComponent<CAnimation>(entityId);
+			var loco = Registry.GetComponent<CLocomotion>(entityId);
+			var anim = Registry.GetComponent<CAnimation>(entityId);
 
-			var location = pose.Location;
-			var bb = animation.AABB.Translate(location);
+			var pos = loco.Position;
+			var bb = anim.AABB.Translate(pos.X, pos.Y);
 
 			if (objectBounds.IntersectsWith(bb))
 			{
-				var p = camera.MapToScreenCoord(location);
-				p.Offset(animation.AABB.Location);
+				var p = camera.MapToScreenCoord(pos.X, pos.Y);
 				batch
-					.SetSprite(animation.Sprite)
-					.Render(animation.Frame, 0, p.X, p.Y);
+					.SetSprite(anim.Sprite)
+					.Render(anim.Frame, 0,
+						p.X + anim.DrawOffset.X,
+						p.Y + anim.DrawOffset.Y
+					);
 			}
 		}
 

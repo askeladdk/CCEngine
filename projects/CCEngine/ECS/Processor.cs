@@ -7,11 +7,10 @@ namespace CCEngine.ECS
 	/// <summary>
 	/// Abstract entity processor.
 	/// </summary>
-	public abstract class Processor : IComparable<Processor>, IDisposable
+	public abstract class Processor : IDisposable
 	{
 		private Registry registry;
 
-		protected abstract int Priority { get; }
 		public abstract bool IsActive { get; }
 		public abstract bool IsRenderLoop { get; }
 		public abstract void Process(float dt);
@@ -30,11 +29,6 @@ namespace CCEngine.ECS
 		protected Registry Registry
 		{
 			get { return registry; }
-		}
-
-		public int CompareTo(Processor rhs)
-		{
-			return this.Priority - rhs.Priority;
 		}
 	}
 
@@ -81,7 +75,7 @@ namespace CCEngine.ECS
 	{
 		private Queue<TMessage> messages = new Queue<TMessage>();
 
-		public void Enqueue(TMessage message)
+		public void OnMessage(TMessage message)
 		{
 			messages.Enqueue(message);
 		}
