@@ -34,7 +34,7 @@ namespace CCEngine
 
 		public MsgKeyDown(KeyboardKeyEventArgs e)
 		{
-			this.e = e;
+			this.e = new KeyboardKeyEventArgs(e);
 		}
 
 		public override string ToString()
@@ -68,7 +68,7 @@ namespace CCEngine
 
 		public MsgMouseMove(MouseMoveEventArgs e)
 		{
-			this.e = e;
+			this.e = new MouseMoveEventArgs(e);
 		}
 
 		public override string ToString()
@@ -86,7 +86,7 @@ namespace CCEngine
 
 		public MsgMouseButton(MouseButtonEventArgs e)
 		{
-			this.e = e;
+			this.e = new MouseButtonEventArgs(e);
 		}
 
 		public override string ToString()
