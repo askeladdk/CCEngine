@@ -16,7 +16,7 @@ namespace CCEngine.Simulation
 		private int entityId;
 		private CPos destination;
 
-		public int LogLevel { get => Logger.DEBUG; }
+		public LogLevel LogLevel { get => LogLevel.Debug; }
 		public int EntityID { get => entityId; }
 		public MissionType MissionType { get => MissionType.Move; }
 		public CPos Destination { get => destination; }

@@ -5,7 +5,7 @@ namespace CCEngine
 {
 	public interface IMessage
 	{
-		int LogLevel { get; }
+		LogLevel LogLevel { get; }
 	}
 
 	public interface IMessageHandler

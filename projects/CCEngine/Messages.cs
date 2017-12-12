@@ -7,30 +7,11 @@ using CCEngine.Simulation;
 
 namespace CCEngine
 {
-	public class MsgLog : IMessage
-	{
-		private string s;
-		private int priority;
-
-		public int LogLevel { get { return this.priority; } }
-
-		public MsgLog(string s, int priority = 0)
-		{
-			this.s = s;
-			this.priority = priority;
-		}
-
-		public override string ToString()
-		{
-			return this.s;
-		}
-	}
-
 	public class MsgKeyDown : IMessage
 	{
 		public KeyboardKeyEventArgs e;
 
-		public int LogLevel { get { return Logger.NEVER; } }
+		public LogLevel LogLevel { get { return LogLevel.Never; } }
 
 		public MsgKeyDown(KeyboardKeyEventArgs e)
 		{
@@ -47,7 +28,7 @@ namespace CCEngine
 	{
 		public int state;
 
-		public int LogLevel { get { return Logger.DEBUG; } }
+		public LogLevel LogLevel { get { return LogLevel.Debug; } }
 
 		public MsgGotoState(int state)
 		{
@@ -64,7 +45,7 @@ namespace CCEngine
 	{
 		public MouseMoveEventArgs e;
 		
-		public int LogLevel { get { return Logger.NEVER; } }
+		public LogLevel LogLevel { get { return LogLevel.Never; } }
 
 		public MsgMouseMove(MouseMoveEventArgs e)
 		{
@@ -82,7 +63,7 @@ namespace CCEngine
 	{
 		public MouseButtonEventArgs e;
 
-		public int LogLevel { get { return Logger.NEVER; } }
+		public LogLevel LogLevel { get { return LogLevel.Never; } }
 
 		public MsgMouseButton(MouseButtonEventArgs e)
 		{
@@ -105,7 +86,7 @@ namespace CCEngine
 		public TechnoType TechnoType { get { return this.technoType; } }
 		public IAttributeTable Table { get { return this.table; } }
 
-		public int LogLevel { get { return Logger.DEBUG; } }
+		public LogLevel LogLevel { get { return LogLevel.Debug; } }
 
 		public MsgSpawnEntity(string id, TechnoType technoType, IAttributeTable table)
 		{

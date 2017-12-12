@@ -67,7 +67,7 @@ namespace CCEngine
 			this.assets.RegisterLoader<Map>(new MapLoader());
 			//this.assets.RegisterLoader<World>(new WorldLoader());
 
-			this.logger = new Logger(this, Logger.DEBUG);
+			this.logger = new Logger(this, LogLevel.Debug);
 			this.logic = new Logic.GameLogic(this);
 			this.bus.Subscribe(this.logger);
 			this.bus.Subscribe(this.logic);
@@ -182,14 +182,14 @@ namespace CCEngine
 			return this.assets.Load<T>(filename, cache, parameters);
 		}
 
-		public void Log(int priority, string fmt, params object[] args)
+		public void Log(LogLevel priority, string fmt, params object[] args)
 		{
-			this.SendMessage(new MsgLog(fmt.F(args), priority));
+			this.logger.Log(priority, fmt, args);
 		}
 
 		public void Log(string fmt, params object[] args)
 		{
-			this.SendMessage(new MsgLog(fmt.F(args), Logger.DEBUG));
+			this.logger.Log(LogLevel.Debug, fmt, args);
 		}
 
 		public void SetState(int state)
@@ -222,11 +222,11 @@ namespace CCEngine
 			using (Game g = new Game(screenw, screenh, wflag, VSyncMode.Adaptive))
 			{
 				// Log some OpenGL stats
-				g.Log(2, GL.GetString(StringName.Vendor));
-				g.Log(2, GL.GetString(StringName.Renderer));
-				g.Log(2, GL.GetString(StringName.Version));
-				g.Log(2, "Shader Language v{0}", GL.GetString(StringName.ShadingLanguageVersion));
-				g.Log(2, "Maximum Texture Size {0}x{0}", GL.GetInteger(GetPName.MaxTextureSize));
+				g.Log(LogLevel.Info, GL.GetString(StringName.Vendor));
+				g.Log(LogLevel.Info, GL.GetString(StringName.Renderer));
+				g.Log(LogLevel.Info, GL.GetString(StringName.Version));
+				g.Log(LogLevel.Info, "Shader Language v{0}", GL.GetString(StringName.ShadingLanguageVersion));
+				g.Log(LogLevel.Info, "Maximum Texture Size {0}x{0}", GL.GetInteger(GetPName.MaxTextureSize));
 
 				// Load the virtual file system.
 				var roots = config.GetString("CCEngine", "Roots").Split(',');

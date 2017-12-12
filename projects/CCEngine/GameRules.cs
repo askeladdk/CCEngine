@@ -147,7 +147,7 @@ namespace CCEngine
 				{"Locomotion.Locomotor", "Drive"},
 			};
 
-			Log(Logger.DEBUG, "{0}:\n{1}", id, config);
+			Log("{0}:\n{1}", id, config);
 
 			bp = new Blueprint(config,
 				typeof(CLocomotion),

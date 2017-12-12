@@ -3,6 +3,15 @@ using CCEngine;
 
 namespace CCEngine
 {
+	public enum LogLevel
+	{
+		Never,
+		Debug,
+		Info,
+		Warn,
+		Error,
+	}
+
 	public class Logger : IMessageHandler
 	{
 		public const int ERROR = 0;
@@ -13,25 +22,30 @@ namespace CCEngine
 
 		private static readonly string[] prefix =
 		{
-			"[ERROR]",
-			"[WARN ]",
-			"[INFO ]",
+			"[NEVER]",
 			"[DEBUG]",
+			"[INFO ]",
+			"[WARN ]",
+			"[ERROR]",
 		};
 
-		private int loglevel;
+		private int minlevel;
 
-		public Logger(Game p, int loglevel)
+		public Logger(Game p, LogLevel minlevel)
 		{
-			this.loglevel = Math.Min(loglevel, prefix.Length - 1);
+			this.minlevel = (int)minlevel;
+		}
+
+		public void Log(LogLevel priority, string fmt, params object[] args)
+		{
+			var pr = (int)priority;
+			if(pr >= this.minlevel)
+				Console.WriteLine("{0} {1}".F(prefix[pr], fmt.F(args)));
 		}
 
 		public void OnMessage(IMessage msg)
 		{
-			if (this.loglevel >= msg.LogLevel)
-			{
-				Console.WriteLine("{0} {1}".F(prefix[msg.LogLevel], msg));
-			}
+			this.Log(msg.LogLevel, "{0}", msg);
 		}
 	}
 }
