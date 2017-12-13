@@ -36,6 +36,7 @@ namespace CCEngine
 		private SpriteBatch batch;
 		private Camera camera;
 		private Display display;
+		private float interpolatedTime = 0;
 
 		public static Game Instance { get => instance; }
 
@@ -113,13 +114,16 @@ namespace CCEngine
 			this.globalClock++;
 
 			this.Title = "CCEngine - FPS: {0}, Clock: {1}".F((int)this.UpdateFrequency, this.globalClock);
+			this.interpolatedTime = 0;
 		}
 
 		protected override void OnRenderFrame(FrameEventArgs e)
 		{
 			base.OnRenderFrame(e);
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-			this.logic.Render((float)e.Time);
+			var alpha = Helpers.Clamp(interpolatedTime / (float)UpdatePeriod, 0.0f, 1.0f);
+			interpolatedTime += (float)e.Time;
+			this.logic.Render(alpha);
 			SwapBuffers();
 		}
 

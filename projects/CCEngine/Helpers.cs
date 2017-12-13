@@ -56,5 +56,11 @@ namespace CCEngine
 		{
 			return Math.Min(Math.Max(value, min), max);
 		}
+
+		public static int Lerp(int v0, int v1, float alpha)
+		{
+			var a = (int)(alpha * 256);
+			return v0 + ((v1 - v0) * a) / 256;
+		}
 	}
 }

@@ -20,6 +20,11 @@ namespace CCEngine.Simulation
 			get => this.locomotor.Facing;
 		}
 
+		public XPos InterpolatedPosition(float alpha)
+		{
+			return locomotor.InterpolatedPosition(alpha);
+		}
+
 		public void MoveTo(CPos destination)
 		{
 			this.locomotor.MoveTo(destination);

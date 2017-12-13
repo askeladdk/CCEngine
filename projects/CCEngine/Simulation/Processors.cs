@@ -57,7 +57,7 @@ namespace CCEngine.Simulation
 
 		public override bool IsRenderLoop { get => true; }
 
-		protected override void Process(float dt, int entityId)
+		protected override void Process(float alpha, int entityId)
 		{
 			var g = Game.Instance;
 			var batch = g.SpriteBatch;
@@ -67,7 +67,7 @@ namespace CCEngine.Simulation
 			var loco = Registry.GetComponent<CLocomotion>(entityId);
 			var anim = Registry.GetComponent<CAnimation>(entityId);
 
-			var pos = loco.Position;
+			var pos = loco.InterpolatedPosition(alpha);
 			var bb = anim.AABB.Translate(pos.X, pos.Y);
 
 			if (objectBounds.IntersectsWith(bb))

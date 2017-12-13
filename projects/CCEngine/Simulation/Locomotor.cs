@@ -13,18 +13,31 @@ namespace CCEngine.Simulation
 	public abstract class Locomotor
 	{
 		private XPos position;
+		private XPos lastPosition;
 		private BinaryAngle facing;
+
+		public XPos InterpolatedPosition(float alpha)
+		{
+			var x = Helpers.Lerp(lastPosition.X, position.X, alpha);
+			var y = Helpers.Lerp(lastPosition.Y, position.Y, alpha);
+			return new XPos(0, 0, x, y);
+		}
 
 		protected Locomotor(XPos position, BinaryAngle facing)
 		{
 			this.position = position;
+			this.lastPosition = position;
 			this.facing = facing;
 		}
 
 		public XPos Position
 		{
 			get => position;
-			protected set => position = value;
+			protected set
+			{
+				lastPosition = position;
+				position = value;
+			}
 		}
 
 		public BinaryAngle Facing
@@ -103,6 +116,10 @@ namespace CCEngine.Simulation
 				// path empty
 				else
 				{
+					// hack to fix interpolation glitch where destination reached
+					// but lastPosition != position.
+					Position = Position;
+
 					state = LocomotorState.Idle;
 					path = null;
 				}
