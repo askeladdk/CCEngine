@@ -27,7 +27,9 @@ namespace CCEngine.Simulation
 
 			if(g.Registry.TryGetComponent<CLocomotion>(mission.EntityID, out loco))
 			{
-				loco.MoveTo(mission.Destination);
+				var field = new SingularFlowField<MovementZone>(g.Map,
+					loco.Position.CPos, mission.Destination, MovementZone.Track);
+				loco.MoveTo(field);
 			}
 		}
 

@@ -3,6 +3,7 @@ using System.Drawing;
 using CCEngine.Rendering;
 using CCEngine.ECS;
 using CCEngine.Collections;
+using CCEngine.Algorithms;
 
 namespace CCEngine.Simulation
 {
@@ -25,9 +26,9 @@ namespace CCEngine.Simulation
 			return locomotor.InterpolatedPosition(alpha);
 		}
 
-		public void MoveTo(CPos destination)
+		public void MoveTo(IFlowField field)
 		{
-			this.locomotor.MoveTo(destination);
+			this.locomotor.MoveTo(field);
 		}
 
 		public void Process()

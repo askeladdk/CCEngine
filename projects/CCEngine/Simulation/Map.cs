@@ -123,6 +123,11 @@ namespace CCEngine.Simulation
 			Tuple.Create(-1, -1, 14),
 		};
 
+		Land IGrid<MovementZone>.GetLandAt(CPos cpos)
+		{
+			return GetCell(cpos).Land;
+		}
+
 		IEnumerable<Tuple<CPos, int>> IGrid<MovementZone>.GetPassableNeighbors(MovementZone mz, CPos cpos)
 		{
 			foreach(var co in cellOffsets)

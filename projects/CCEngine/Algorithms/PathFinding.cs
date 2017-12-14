@@ -9,6 +9,7 @@ namespace CCEngine.Algorithms
 	public interface IGrid<PathConstraints>
 	{
 		IEnumerable<Tuple<CPos, int>> GetPassableNeighbors(PathConstraints pc, CPos cpos);
+		Land GetLandAt(CPos cpos);
 	}
 
 	/// <summary>
@@ -77,33 +78,62 @@ namespace CCEngine.Algorithms
 			// No path found.
 			yield break;
 		}
+	}
 
-		public static IEnumerable<CardinalDirection> ConvertPathToDirections(
-			IEnumerable<CPos> path)
+	public interface IFlowField
+	{
+		bool IsDestination(CPos pos);
+		bool TryGetDirection(CPos pos, out CardinalDirection dir);
+		Land GetLandAt(CPos cpos);
+	}
+
+	public class SingularFlowField<PathConstraints> : IFlowField
+	{
+		private IGrid<PathConstraints> grid;
+		private CPos destination;
+		private Dictionary<CPos, CardinalDirection> field;
+
+		private static Dictionary<CPos, CardinalDirection> Calculate(
+			IGrid<PathConstraints> grid, CPos source, CPos destination, PathConstraints pathConstraints)
 		{
-			if(!path.Any())
-				yield break;
-			var last = path.First();
-			foreach(var cell in path.Skip(1))
+			var field = new Dictionary<CPos, CardinalDirection>();
+			var path = PathFinding.AStar(grid, source, destination, pathConstraints);
+
+			if(path.Any())
 			{
-				var angle = BinaryAngle.Between(last.X, last.Y, cell.X, cell.Y);
-				last = cell;
-				yield return angle.CardinalDirection;
+				// A* generator returns path in reverse
+				var last = path.First();
+				foreach(var cell in path.Skip(1))
+				{
+					field[cell] = BinaryAngle.Between(cell.X, cell.Y, last.X, last.Y).CardinalDirection;
+					last = cell;
+				}
 			}
+
+			return field;
 		}
 
-		public static IEnumerable<Vector2I> PathToVectors(
-			IEnumerable<CPos> path)
+		public SingularFlowField(IGrid<PathConstraints> grid, CPos source, CPos destination,
+			PathConstraints pathConstraints)
 		{
-			if(!path.Any())
-				yield break;
-			var last = path.First();
-			foreach(var cell in path.Skip(1))
-			{
-				var v = new Vector2I(cell.X - last.X, cell.Y - last.Y);
-				last = cell;
-				yield return v;
-			}
+			this.grid = grid;
+			this.destination = destination;
+			this.field = Calculate(grid, source, destination, pathConstraints);
+		}
+
+		public bool IsDestination(CPos pos)
+		{
+			return pos == destination;
+		}
+
+		public bool TryGetDirection(CPos pos, out CardinalDirection dir)
+		{
+			return field.TryGetValue(pos, out dir);
+		}
+
+		public Land GetLandAt(CPos cpos)
+		{
+			return this.grid.GetLandAt(cpos);
 		}
 	}
 }

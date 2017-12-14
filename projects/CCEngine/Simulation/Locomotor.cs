@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CCEngine.Algorithms;
 
 namespace CCEngine.Simulation
 {
@@ -8,6 +9,7 @@ namespace CCEngine.Simulation
 		Idle,
 		PreMove,
 		Moving,
+		Stuck,
 	}
 
 	public abstract class Locomotor
@@ -46,7 +48,7 @@ namespace CCEngine.Simulation
 			protected set => facing = value;
 		}
 
-		public abstract void MoveTo(CPos destination);
+		public abstract void MoveTo(IFlowField field);
 		public abstract void Process();
 	}
 
@@ -56,7 +58,7 @@ namespace CCEngine.Simulation
 		{
 		}
 
-		public override void MoveTo(CPos destination)
+		public override void MoveTo(IFlowField field)
 		{
 			// nothing
 		}
@@ -72,7 +74,7 @@ namespace CCEngine.Simulation
 		private MovementZone movementZone;
 		private int moveSpeed;
 		private LocomotorState state;
-		private Stack<CPos> path;
+		private IFlowField field;
 		private XPos nextPosition;
 		private Vector2I movevec;
 
@@ -83,45 +85,40 @@ namespace CCEngine.Simulation
 			this.movementZone = movementZone;
 		}
 
-		public override void MoveTo(CPos destination)
+		public override void MoveTo(IFlowField field)
 		{
-			var g = Game.Instance;
-			path = new Stack<CPos>(g.Map.GetPath(Position.CPos, destination));
-			if(path.Count > 1)
-			{
-				path.Pop();
-				state = LocomotorState.PreMove;
-			}
+			this.field = field;
+			state = LocomotorState.PreMove;
 		}
 
 		public override void Process()
 		{
-			var g = Game.Instance;
-			//facing = BinaryAngle.Between(position.X, position.Y, g.mousePos.X, g.mousePos.Y);
-
 			// prepare moving to the next cell in the path
 			if(state == LocomotorState.PreMove)
 			{
-				CPos next;
-				// get the next cell
-				if(path.TryPop(out next))
+				// destination reached?
+				CardinalDirection dir;
+				if(field.IsDestination(Position.CPos))
 				{
-					nextPosition = new XPos(next);
-					var dirvec = new Vector2I(next.X - Position.CellX, next.Y - Position.CellY);
-					var spdmul = g.Map.GetCell(Position.CellId).Land.SpeedMultiplier(movementZone);
+					Position = Position; // hack to fix interpolation glitch when destination reached
+					state = LocomotorState.Idle;
+					field = null;
+				}
+				else if(field.TryGetDirection(Position.CPos, out dir))
+				{
+					var dirvec = dir.ToVector();
+					var spdmul = field.GetLandAt(Position.CPos).SpeedMultiplier(movementZone);
 					movevec = dirvec.Multiply(moveSpeed * spdmul);
-					Facing = BinaryAngle.Between(Position.CellX, Position.CellY, next.X, next.Y);
+					nextPosition = Position.CPos.Translate(dirvec.X, dirvec.Y).XPos;
+					Facing = new BinaryAngle(dir);
 					state = LocomotorState.Moving;
 				}
-				// path empty
 				else
 				{
-					// hack to fix interpolation glitch where destination reached
-					// but lastPosition != position.
-					Position = Position;
-
-					state = LocomotorState.Idle;
-					path = null;
+					Position = Position; // hack to fix interpolation glitch when destination reached
+					state = LocomotorState.Stuck;
+					field = null;
+					Console.WriteLine("I'm stuck!");
 				}
 			}
 
@@ -134,17 +131,14 @@ namespace CCEngine.Simulation
 				// reaching end of cell
 				if( Math.Abs(diff.X) < Math.Abs(movevec.X) || Math.Abs(diff.Y) < Math.Abs(movevec.Y) )
 				{
-					CPos next;
 					// check if next cell in the path follows the same direction
-					if(path.TryPeek(out next))
-					{
-						var f = BinaryAngle.Between(Position.CellX, Position.CellY, next.X, next.Y);
-						contheading = (f == Facing);
-					}
+					var dirvec = Facing.CardinalDirection.ToVector();
+					var next = Position.CPos.Translate(dirvec.X, dirvec.Y);
+					CardinalDirection nextdir;
+					if(field.TryGetDirection(next, out nextdir))
+						contheading = (nextdir == Facing.CardinalDirection);
 					else
-					{
 						contheading = false;
-					}
 					state = LocomotorState.PreMove;
 				}
 
