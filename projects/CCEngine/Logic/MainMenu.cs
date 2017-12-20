@@ -14,11 +14,18 @@ namespace CCEngine.Logic
 	class MainMenu : IGameState
 	{
 		private bool initialized;
+		private GUI.GUI gui;
+		private GUI.HUDWidget hud;
 
 		private void Initialize()
 		{
 			initialized = true;
 			Game.Instance.LoadMap("scg01ea.ini");
+
+			gui = new GUI.GUI();
+			hud = new GUI.HUDWidget();
+			hud.SetButtonEnabled(GUI.HUDWidget.ButtonMap, false);
+			hud.SetTabVisibility(GUI.HUDWidget.TabTimer, false);
 		}
 
 		public void HandleMessage(IMessage message)
@@ -47,6 +54,7 @@ namespace CCEngine.Logic
 				if(g.Display.NormaliseScreenPosition(mouseMove.e.Position, out pos))
 				{
 					g.Map.cellHighlight = g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos;
+					gui.MouseMove(pos.X, pos.Y);
 				}
 			}
 			else if(message.Is<MsgMouseButton>(out mouseButton))
@@ -59,6 +67,7 @@ namespace CCEngine.Logic
 						g.SendMessage(new MissionMove(28, g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos));
 					}
 				}
+				gui.MousePress(mouseButton.e.Button, mouseButton.e.IsPressed);
 			}
 			else
 			{
@@ -79,14 +88,18 @@ namespace CCEngine.Logic
 		public void Update(float dt)
 		{
 			Game.Instance.Map.Update(dt);
+			gui.Interact(hud);
+			gui.Flip();
 		}
 
 		public void Render(float dt)
 		{
-			var batch = Game.Instance.SpriteBatch;
+			var g = Game.Instance;
+			var batch = g.SpriteBatch;
 
 			batch.Begin();
-			Game.Instance.Map.Render(dt);
+			g.Map.Render(dt);
+			hud.Render(batch);
 			batch.End();
 		}
 	}
