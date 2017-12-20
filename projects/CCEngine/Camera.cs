@@ -29,7 +29,7 @@ namespace CCEngine
 		{
 			topLeft = new Point(
 				Helpers.Clamp(mapX, mapBounds.Left, mapBounds.Right - viewPort.Width),
-				Helpers.Clamp(mapY, mapBounds.Top, mapBounds.Bottom - viewPort.Height + viewPort.Top)
+				Helpers.Clamp(mapY, mapBounds.Top, mapBounds.Bottom - viewPort.Height)
 			);
 		}
 
