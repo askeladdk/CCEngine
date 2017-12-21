@@ -4,27 +4,11 @@ using System.Collections.Generic;
 
 namespace CCEngine.GUI
 {
-	/// Interaction event arguments.
-	public struct InteractionEventArgs
-	{
-		private IWidget widget;
-		private Interaction interaction;
-
-		public IWidget Widget { get => widget; }
-		public Interaction Interaction { get => interaction; }
-
-		public InteractionEventArgs(IWidget widget, Interaction interaction)
-		{
-			this.widget = widget;
-			this.interaction = interaction;
-		}
-	}
-
 	/// Basic widget that describes a screen region and responds to interactions
 	/// via an event handler.
 	public class RegionWidget : IWidget
 	{
-		public event Action<object, InteractionEventArgs> OnInteraction;
+		public event EventHandler<InteractionEventArgs> Interaction;
 
 		private Rectangle region;
 
@@ -42,10 +26,9 @@ namespace CCEngine.GUI
 			this.region = new Rectangle(x, y, w, h);
 		}
 
-		public void Interact(GUI gui, Interaction interaction)
+		public void OnInteraction(GUI gui, Interaction interaction)
 		{
-			if(OnInteraction != null)
-				OnInteraction.Invoke(gui, new InteractionEventArgs(this, interaction));
+			Interaction?.Invoke(this, new InteractionEventArgs(gui, interaction));
 		}
 	}
 }

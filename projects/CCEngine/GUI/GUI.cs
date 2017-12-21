@@ -32,7 +32,7 @@ namespace CCEngine.GUI
 		/// Enumerates this widget's children or null.
 		IEnumerable<IWidget> Children { get; }
 		/// Interact with this widget.
-		void Interact(GUI gui, Interaction interaction);
+		void OnInteraction(GUI gui, Interaction interaction);
 	}
 
 
@@ -98,7 +98,7 @@ namespace CCEngine.GUI
 				foreach(var c in children)
 					Interact(c);
 			if(widget.CanInteract)
-				widget.Interact(this, GetInteraction(widget, widget.Region));
+				widget.OnInteraction(this, GetInteraction(widget, widget.Region));
 		}
 
 		/// Must be called after all Interact() calls.

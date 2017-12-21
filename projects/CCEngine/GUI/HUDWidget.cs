@@ -91,35 +91,29 @@ namespace CCEngine.GUI
 			btnDisabled[btn] = !enabled;
 		}
 
-		private void OnTab(object sender, InteractionEventArgs e)
+		private void OnInteraction_Tab(object sender, InteractionEventArgs e)
 		{
 			var g = Game.Instance;
-			var widget = e.Widget;
 			var iaction = e.Interaction;
 
 			for(int i = 0; i < TabCount; i++)
 			{
-				if(tabWidgets[i] == widget)
+				if(tabWidgets[i] == sender)
 				{
 					tabPressed[i] =
 						(iaction == Interaction.Enter || iaction == Interaction.Hold);
-					if(iaction != Interaction.Cold)
-						g.Log("Interaction {0} with tab #{1}", iaction, i);			
 					return;
 				}
 			}
 		}
 
-		private void OnButton(object sender, InteractionEventArgs e)
+		private void OnInteraction_Button(object sender, InteractionEventArgs e)
 		{
-			var widget = e.Widget;
-			var iaction = e.Interaction;
-
 			for(int i = 0; i < ButtonCount; i++)
 			{
-				if(!btnDisabled[i] && btnWidgets[i] == widget)
+				if(!btnDisabled[i] && btnWidgets[i] == sender)
 				{
-					btnPressed[i] = (iaction == Interaction.Enter);
+					btnPressed[i] = (e.Interaction == Interaction.Enter);
 					return;
 				}
 			}
@@ -144,17 +138,17 @@ namespace CCEngine.GUI
 			for(int i = 0; i < TabCount; i++)
 			{
 				tabWidgets[i] = new RegionWidget(tabRects[i]);
-				tabWidgets[i].OnInteraction += OnTab;
+				tabWidgets[i].Interaction += OnInteraction_Tab;
 			}
 
 			for(int i = 0; i < ButtonCount; i++)
 			{
 				btnWidgets[i] = new RegionWidget(buttonRects[i]);
-				btnWidgets[i].OnInteraction += OnButton;
+				btnWidgets[i].Interaction += OnInteraction_Button;
 			}
 		}
 
-		public void Interact(GUI gui, Interaction interaction)
+		public void OnInteraction(GUI gui, Interaction interaction)
 		{
 			throw new NotImplementedException();
 		}
