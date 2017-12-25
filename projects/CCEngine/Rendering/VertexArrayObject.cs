@@ -7,6 +7,8 @@ namespace CCEngine.Rendering
 	{
 		private int handle;
 
+		public int Handle { get => handle; }
+
 		public VertexArrayObject()
 		{
 			GL.GenVertexArrays(1, out handle);
@@ -28,8 +30,7 @@ namespace CCEngine.Rendering
 			return false;
 		}
 
-		public void SetAttrib(int index,
-			int nelem = 4, VertexAttribPointerType type = VertexAttribPointerType.Float,
+		public void SetAttrib(int index, int nelem, VertexAttribPointerType type,
 			bool normalized = false, int stride = 0, int offset = 0, int divisor = 0)
 		{
 			GL.VertexAttribPointer(index, nelem, type, normalized, stride, offset);
@@ -54,11 +55,6 @@ namespace CCEngine.Rendering
 		public void Unbind()
 		{
 			GL.BindVertexArray(0);
-		}
-
-		public int Handle
-		{
-			get { return handle; }
 		}
 	}
 }

@@ -148,8 +148,8 @@ namespace CCEngine.Simulation
 
 		public void Render(float dt)
 		{
-			var batch = Game.Instance.SpriteBatch;
-			batch.SetPalette(this.theater.Palette);
+			var renderer = Game.Instance.Renderer;
+			renderer.SetPalette(this.theater.Palette);
 
 			// Calculate viewable map area.
 			Point screenTopLeft;
@@ -169,21 +169,24 @@ namespace CCEngine.Simulation
 			GL.Enable(EnableCap.ScissorTest);
 
 			// Render ground layer.
-			batch.SetBlending(false);
-			this.RenderGround(batch, cellBounds, screenTopLeft);
+			//batch.SetBlending(false);
+			this.RenderGround(renderer, cellBounds, screenTopLeft);
+			renderer.Flush();
 
 			// Render entities.
-			batch.SetBlending(true);
+			//batch.SetBlending(true);
 			//this.RenderOccupyLayer(batch, cellBounds, screenTopLeft);
+
 			this.registry.Render(dt);
+			//batch.Submit();
 
 			// Finish up.
-			batch.Flush();
-			batch.SetBlending(false);
+			//batch.SetBlending(false);
+			renderer.Flush();
 			GL.Disable(EnableCap.ScissorTest);
 		}
 
-		public void RenderGround(SpriteBatch batch, Rectangle cellBounds, Point screenTopLeft)
+		public void RenderGround(Renderer renderer, Rectangle cellBounds, Point screenTopLeft)
 		{
 			int screenY = screenTopLeft.Y + Constants.TileSizeHalf;
 			for (int y = cellBounds.Top; y < cellBounds.Bottom; y++)
@@ -194,59 +197,30 @@ namespace CCEngine.Simulation
 					var cpos = new CPos(x, y);
 					var cell = this.GetCell(cpos);
 					var landtype = cell.Land.Type;
-					bool highlight = false;
+
+					OpenTK.Graphics.Color4 color = OpenTK.Graphics.Color4.White;
 
 					if(cpos == this.cellHighlight)
-					{
-						highlight = true;
-						batch.SetColor(OpenTK.Graphics.Color4.LightBlue);
-					}
+						color = OpenTK.Graphics.Color4.LightBlue;
 					else if (this.pathHighlight != null && this.pathHighlight.Contains(cpos))
-					{
-						highlight = true;
-						batch.SetColor(OpenTK.Graphics.Color4.Blue);
-					}
+						color = OpenTK.Graphics.Color4.Blue;
 					else if (cell.OccupyEntityId != 0)
-					{
-						highlight = true;
-						batch.SetColor(OpenTK.Graphics.Color4.Purple);
-					}
-
+						color = OpenTK.Graphics.Color4.Purple;
 					else if(landtype == LandType.Rock)
-					{
-						highlight = true;
-						batch.SetColor(OpenTK.Graphics.Color4.Red);
-					}
+						color = OpenTK.Graphics.Color4.Red;
 					else if (landtype == LandType.Rough)
-					{
-						highlight = true;
-						batch.SetColor(OpenTK.Graphics.Color4.Yellow);
-					}
+						color = OpenTK.Graphics.Color4.Yellow;
 					else if (landtype == LandType.Road)
-					{
-						highlight = true;
-						batch.SetColor(OpenTK.Graphics.Color4.YellowGreen);
-					}
+						color = OpenTK.Graphics.Color4.YellowGreen;
 					else if (landtype == LandType.Beach)
-					{
-						highlight = true;
-						batch.SetColor(OpenTK.Graphics.Color4.LightSeaGreen);
-					}
+						color = OpenTK.Graphics.Color4.LightSeaGreen;
 					else if (landtype == LandType.Water)
-					{
-						highlight = true;
-						batch.SetColor(OpenTK.Graphics.Color4.LightGreen);
-					}
+						color = OpenTK.Graphics.Color4.LightGreen;
 					else if (landtype == LandType.River)
-					{
-						highlight = true;
-						batch.SetColor(OpenTK.Graphics.Color4.Green);
-					}
-					batch
-						.SetSprite(this.theater.GetTemplate(cell.TmpId))
-						.Render(cell.TmpIndex, 0, screenX, screenY);
-					if (highlight)
-						batch.SetColor();
+						color = OpenTK.Graphics.Color4.Green;
+
+					renderer.Blit(this.theater.GetTemplate(cell.TmpId),
+						cell.TmpIndex, screenX, screenY, color.ToArgb());
 					screenX += Constants.TileSize;
 				}
 				screenY += Constants.TileSize;

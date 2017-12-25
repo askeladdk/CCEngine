@@ -153,31 +153,25 @@ namespace CCEngine.GUI
 			throw new NotImplementedException();
 		}
 
-		public void Render(SpriteBatch batch)
+		public void Render(Renderer renderer)
 		{
 			// draw the top tabs
-			batch.SetSprite(tabs);
 			for(int i = 0; i < TabCount; i++)
 			{
 				if(tabHidden[i])
 					continue;
 				var ofs = tabPressed[i] ? 1 : 0;
 				var tab = tabWidgets[i];
-				batch.Render(2 * i + ofs, 0, tab.Region.Left + 80, 7);
+				renderer.Blit(tabs, 2 * i + ofs, tab.Region.Left + 80, 7);
 			}
 
 			// draw the sidebar
-			batch.SetSprite(sradrfrm);
-			batch.Render(1, 0, 480 + 80, 16 + 80);
-			batch.SetSprite(sideradr);
-			batch.Render(0, 0, 480 + 80, 16 + 70);
-			batch.SetSprite(side2);
-			batch.Render(0, 0, 480 + 80, 176 + 50);
-			batch.SetSprite(side3);
-			batch.Render(0, 0, 480 + 80, 276 + 62);
-			batch.SetSprite(powerbar);
-			batch.Render(0, 0, 480 + 10, 176 + 56);
-			batch.Render(1, 0, 480 + 10, 288 + 56);
+			renderer.Blit(sradrfrm, 1, 480 + 80, 16 + 80);
+			renderer.Blit(sideradr, 0, 480 + 80, 16 + 70);
+			renderer.Blit(side2, 0, 480 + 80, 176 + 50);
+			renderer.Blit(side3, 0, 480 + 80, 276 + 62);
+			renderer.Blit(powerbar, 0, 480 + 10, 176 + 56);
+			renderer.Blit(powerbar, 1, 480 + 10, 288 + 56);
 
 			// draw the sidebar buttons
 			for(var i = 0; i < ButtonCount; i++)
@@ -188,9 +182,9 @@ namespace CCEngine.GUI
 					ofs = 2;
 				else if(btnPressed[i])
 					ofs = 1;
-				batch.SetSprite(sidebtn[i]);
-				batch.Render(ofs, 0, btn.Region.X + 16, btn.Region.Y + 12);
+				renderer.Blit(sidebtn[i], ofs, btn.Region.X + 16, btn.Region.Y + 12);
 			}
+			renderer.Flush();
 		}
 	}
 }

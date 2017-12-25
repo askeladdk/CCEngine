@@ -1,38 +1,25 @@
 #version 330 core
 
-// Input.
-layout(location = 0) in vec2 in_Vertex;
-layout(location = 1) in vec2 in_UV;
-layout(location = 2) in vec4 in_Tile;
-layout(location = 3) in vec4 in_FrameUV;
-layout(location = 4) in vec2 in_Extra;
-layout(location = 5) in vec4 in_Color;
+layout(location = 0) in vec2 position;
+layout(location = 1) in vec2 texcoord;
+layout(location = 2) in vec2 translation;
+layout(location = 3) in vec2 scaling;
+layout(location = 4) in vec4 region;
+layout(location = 5) in vec4 modifiers;
+layout(location = 6) in vec4 vchannel;
 
-// Output to fragment shader.
-out vec2 in_FragUV;
-out vec2 in_FragExtra;
-out vec4 in_FragColor;
+out vec2 uvcoord;
+out vec4 channel;
+out float remap;
+out float cloak;
 
-// Uniform variables.
 uniform mat4 projection;
 
 void main()
 {
-	float tx = in_Tile.x;
-	float ty = in_Tile.y;
-	float sx = in_Tile.z;
-	float sy = in_Tile.w;
-
-	// Warning: matrix is transposed
-	mat4 model = mat4(
-		vec4(sx,  0,  0,  0),
-		vec4( 0, sy,  0,  0),
-		vec4( 0,  0,  1,  0),
-		vec4(tx, ty,  0,  1)
-	);
-
-	in_FragColor = in_Color.bgra;
-	in_FragExtra = in_Extra;
-	in_FragUV    = in_UV * in_FrameUV.zw + in_FrameUV.xy;
-	gl_Position  = projection * model * vec4(in_Vertex, 0.0, 1.0);
+	channel     = vchannel.bgra;
+	remap       = modifiers.x;
+	cloak       = modifiers.y;
+	uvcoord     = texcoord * region.zw + region.xy;
+	gl_Position = projection * vec4(position * scaling + translation, 0.0, 1.0);
 }

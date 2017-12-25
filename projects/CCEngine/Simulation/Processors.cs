@@ -60,7 +60,7 @@ namespace CCEngine.Simulation
 		protected override void Process(float alpha, int entityId)
 		{
 			var g = Game.Instance;
-			var batch = g.SpriteBatch;
+			var renderer = g.Renderer;
 			var camera = g.Camera;
 			var objectBounds = g.Map.ObjectBounds;
 
@@ -73,12 +73,8 @@ namespace CCEngine.Simulation
 			if (objectBounds.IntersectsWith(bb))
 			{
 				var p = camera.MapToScreenCoord(pos.X, pos.Y);
-				batch
-					.SetSprite(anim.Sprite)
-					.Render(anim.Frame, 0,
-						p.X + anim.DrawOffset.X,
-						p.Y + anim.DrawOffset.Y
-					);
+				renderer.Blit(anim.Sprite, anim.Frame,
+					p.X + anim.DrawOffset.X, p.Y + anim.DrawOffset.Y);
 			}
 		}
 

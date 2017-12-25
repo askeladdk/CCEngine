@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using CCEngine;
 
 namespace CCEngine.Rendering
 {
-	class BufferObject : Resource
+	public class BufferObject : Resource
 	{
 		readonly private BufferTarget target;
 		readonly private int nelems;
@@ -62,7 +63,7 @@ namespace CCEngine.Rendering
 		}
 	}
 
-	sealed class BufferObject<T> : BufferObject where T : struct//, IComparable
+	public sealed class BufferObject<T> : BufferObject where T : struct
 	{
 		public BufferObject(T[] data, BufferTarget target,
 			BufferUsageHint hint = BufferUsageHint.StaticDraw)
@@ -87,15 +88,20 @@ namespace CCEngine.Rendering
 			Dispose(false);
 		}
 
+		public void Update(T[] src, int srcOffset, int dstOffset, int length)
+		{
+			var sz = Helpers.SizeOf<T>();
+			var h = GCHandle.Alloc(src, GCHandleType.Pinned);
+			var p = h.AddrOfPinnedObject();
+			var data = IntPtr.Add(p, sz * srcOffset);
+			GL.BufferSubData(Target, (IntPtr)(sz * dstOffset), (IntPtr)(sz * length), data);
+			h.Free();
+		}
+
 		public void Update(T[] data, int offset, int length)
 		{
 			int sz = Helpers.SizeOf<T>();
 			GL.BufferSubData(Target, (IntPtr)(sz * offset), (IntPtr)(sz * length), data);
-		}
-
-		public void Update(T[] data, int offset)
-		{
-			Update(data, offset, data.Length);
 		}
 
 		public void VertexAttribPointer(int index,

@@ -25,6 +25,7 @@ namespace CCEngine
 		// Game systems
 		private Logger logger;
 		private Logic.GameLogic logic;
+		private Renderer renderer;
 
 		// Simulation
 		private int globalClock = 0;
@@ -33,7 +34,6 @@ namespace CCEngine
 		// Misc
 		private static Game instance;
 		private Matrix4 projection;
-		private SpriteBatch batch;
 		private Camera camera;
 		private Display display;
 		private float interpolatedTime = 0;
@@ -45,7 +45,7 @@ namespace CCEngine
 
 		public VFS.VFS VFS { get => this.vfs; }
 		public Matrix4 Projection { get => this.projection; }
-		public SpriteBatch SpriteBatch { get => this.batch; }
+		public Renderer Renderer { get => this.renderer; }
 		public Camera Camera { get => this.camera; }
 		public Display Display { get => this.display; }
 		public ECS.Registry Registry { get => this.map.Registry; }
@@ -79,7 +79,7 @@ namespace CCEngine
 
 		public void Initialise()
 		{
-			this.batch = new SpriteBatch(4096);
+			this.renderer = new Renderer();
 			this.SetRules();
 			this.LoadWorldData();
 		}

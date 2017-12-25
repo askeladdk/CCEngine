@@ -95,12 +95,18 @@ namespace CCEngine.Logic
 		public void Render(float dt)
 		{
 			var g = Game.Instance;
-			var batch = g.SpriteBatch;
+			var renderer = g.Renderer;
 
-			batch.Begin();
 			g.Map.Render(dt);
-			hud.Render(batch);
-			batch.End();
+			hud.Render(renderer);
+
+			// renderer.Rectangle(0, 0, 10, 10, -1);
+			// renderer.Line(10, 10, 100, 10, -1,3);
+			// renderer.Line(100, 10, 100, 100, -1,3);
+			// renderer.Line(100, 100, 10, 100, -1,3);
+			// renderer.Line(10, 100, 10, 10, -1,3);
+			// renderer.Line(10, 10, 100, 100, Color4.BlueViolet.ToArgb());
+			// renderer.Flush();
 		}
 	}
 }

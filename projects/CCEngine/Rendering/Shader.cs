@@ -4,9 +4,13 @@ using OpenTK.Graphics.OpenGL;
 
 namespace CCEngine.Rendering
 {
-	sealed class Shader : Resource
+	public sealed class Shader : Resource
 	{
-		readonly private int handle;
+		private int handle;
+
+		public int Handle { get => handle; }
+
+		public string InfoLog { get => GL.GetShaderInfoLog(handle); }
 
 		private int CreateShader(string source, ShaderType type)
 		{
@@ -42,11 +46,6 @@ namespace CCEngine.Rendering
 			return false;
 		}
 
-		public int Handle
-		{
-			get { return handle; }
-		}
-
 		public bool CompileStatus
 		{
 			get
@@ -57,10 +56,6 @@ namespace CCEngine.Rendering
 			}
 		}
 
-		public string InfoLog
-		{
-			get { return GL.GetShaderInfoLog(handle); }
-		}
 	}
 
 	public class ShaderParameters

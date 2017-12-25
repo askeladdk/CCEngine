@@ -4,11 +4,15 @@ using OpenTK.Graphics.OpenGL;
 
 namespace CCEngine.Rendering
 {
-	sealed class ShaderProgram : Resource
+	public sealed class ShaderProgram : Resource
 	{
-		readonly private int handle;
-		readonly private Shader[] shaders;
-		readonly private Dictionary<string, int> parameters;
+		private int handle;
+		private Shader[] shaders;
+		private Dictionary<string, int> parameters;
+
+		public int Handle { get => handle; }
+
+		public string InfoLog { get => GL.GetProgramInfoLog(handle); }
 
 		public ShaderProgram(params Shader[] shaders)
 		{
@@ -102,16 +106,6 @@ namespace CCEngine.Rendering
 				GL.GetProgram(handle, GetProgramParameterName.LinkStatus, out result);
 				return result != 0;
 			}
-		}
-
-		public string InfoLog
-		{
-			get { return GL.GetProgramInfoLog(handle); }
-		}
-
-		public int Handle
-		{
-			get { return handle; }
 		}
 
 		public int this[string name]
