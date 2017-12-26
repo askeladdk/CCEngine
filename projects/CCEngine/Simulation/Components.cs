@@ -96,7 +96,7 @@ namespace CCEngine.Simulation
 				table.Get<int>("Animation.DrawOffsetX", 0),
 				table.Get<int>("Animation.DrawOffsetY", 0)
 			);
-			var sz = art.Sprite.FrameSize;
+			var sz = art.Sprite.Size;
 			this.aabb = new Rectangle(
 				sz.Width / -2,
 				sz.Height / -2,

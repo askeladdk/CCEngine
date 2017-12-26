@@ -76,7 +76,7 @@ namespace CCEngine.FileFormats
 			// 256 color palette
 			Palette palette = null;
 			if (stream.ReadByte() == 0x0c)
-				palette = new Palette(stream, 0, false);
+				palette = new Palette(stream, 0);
 
 			return new Sprite(frame, frame_w, frame_h, palette);
 		}

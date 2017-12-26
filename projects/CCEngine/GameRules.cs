@@ -98,8 +98,8 @@ namespace CCEngine
 				{"Placement.Foundation", foundationId},
 				{"Placement.Occupy", occupyGridId},
 				{"Placement.Overlap", overlapGridId},
-				{"Animation.DrawOffsetX", (spr.FrameSize.Width - Constants.TileSize) / 2},
-				{"Animation.DrawOffsetY", (spr.FrameSize.Height - Constants.TileSize) / 2},
+				{"Animation.DrawOffsetX", (spr.Size.Width - Constants.TileSize) / 2},
+				{"Animation.DrawOffsetY", (spr.Size.Height - Constants.TileSize) / 2},
 			};
 
 			bp = new Blueprint(config,
@@ -183,7 +183,7 @@ namespace CCEngine
 
 			var trnlist = theatercfg.Enumerate("Terrains").Select(x => x.Value).ToArray();
 
-			var palette_cps = this.LoadAsset<Sprite>("palette.cps", false);
+			var palette_cps = this.LoadAsset<BinFile>("PALETTE.CPS", false); //this.LoadAsset<Sprite>("palette.cps", false);
 
 			foreach (var entry in theatercfg.Enumerate("Theaters"))
 			{
@@ -195,9 +195,10 @@ namespace CCEngine
 
 				var palette = this.LoadAsset<Palette>("{0}.PAL".F(palname), true, new PaletteParameters{
 					shift=2,
-					fix_special=true
+					hasShadow=true,
+					cycles=true,
+					cpsRemap=palette_cps.Bytes,
 				});
-				palette.MakeRemappable(palette_cps);
 
 				// Load templates
 				foreach (var kv2 in tmplist)

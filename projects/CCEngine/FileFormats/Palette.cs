@@ -7,23 +7,20 @@ using CCEngine.Rendering;
 
 namespace CCEngine.FileFormats
 {
+	/// Palette.
 	public class Palette
 	{
-		public const  int RemapStart  = 80;
-		public const  int RemapCount  = 16;
-		public const  int Transparent = 0;
-		public const  int Shadow      = 4;
-		public const uint ShadowAlpha = 128;
+		private const  int RemapStart  = 80;
+		private const  int RemapCount  = 16;
+		private const  int Transparent = 0;
+		private const  int ShadowIndex = 4;
+		private const uint ShadowColor = 0x80000000;
 
-		private uint[] buffer;
-		private Texture texture;
-		private bool remappable = false;
-
-		private static uint[] ReadBuffer(Stream stream, int shift, bool fix_special)
+		/// Read palette into memory.
+		private static void ReadBuffer(Stream stream, uint[] buffer, int shift, bool hasShadow)
 		{
-			uint[] buffer = new uint[256];
 			byte[] tmp = new byte[3];
-			for (int i = 0; i < buffer.Length; i++)
+			for (int i = 0; i < 256; i++)
 			{
 				stream.Read(tmp, 0, 3);
 				uint r = (uint)(tmp[0] << shift);
@@ -33,78 +30,63 @@ namespace CCEngine.FileFormats
 				buffer[i] = (a << 24) | (r << 16) | (g << 8) | b;
 			}
 
+			if (hasShadow)
+				buffer[ShadowIndex] = ShadowColor;
 			buffer[Transparent] = 0;
-			if (fix_special)
-			{
-				buffer[Shadow] = ShadowAlpha << 24;
-			}
-
-			return buffer;
 		}
 
-		public bool IsBuffered { get { return buffer != null; } }
-
-		public bool IsRemappable { get { return remappable; } }
-		public uint[] Buffer { get { return buffer; } }
-
-		public Palette(Stream stream, int shift, bool fix_special)
+		/// Make palette usable for remapping.
+		private static void MakeRemappable(uint[] palette, byte[] cpsRemap, int nremaps)
 		{
-			this.buffer = ReadBuffer(stream, shift, fix_special);
-		}
-
-		public Texture ToTexture(bool discard_buffer = false)
-		{
-			if (this.IsBuffered && texture == null)
+			// Copy the palette several times and fill in the remappable colors from the cps.
+			for (var h = 1; h < nremaps; h++)
 			{
-				texture = new Texture(buffer, 256, remappable ? Constants.HouseColors : 1,
-					PixelType.UnsignedByte, PixelFormat.Bgra,
-					PixelInternalFormat.Rgba, TextureMinFilter.Nearest);
-				if (discard_buffer)
-					buffer = null;
-			}
-			return texture;
-		}
-
-		public Palette MakeRemappable(Sprite palette_cps, bool discard_buffer = false)
-		{
-			if(this.IsRemappable)
-			{
-				if (discard_buffer)
-					buffer = null;
-				return this;
-			}
-			else if (this.IsBuffered && palette_cps.IsBuffered)
-			{
-				uint[] remap = new uint[256 * Constants.HouseColors];
-
-				// Copy the theatre palette several times and fill in the remappable colors from the cps.
-				for (int i = 0; i < Constants.HouseColors; i++)
+				Array.Copy(palette, 0, palette, h * 256, 256);
+				for (var i = 0; i < RemapCount; i++)
 				{
-					Array.Copy(buffer, 0, remap, i * 256, 256);
-					for (int j = 0; j < RemapCount; j++)
-					{
-						byte pal_idx = palette_cps.Buffer[320 * i + j];
-						remap[i * 256 + j + RemapStart] = buffer[pal_idx];
-					}
+					byte pal_idx = cpsRemap[320 * h + i];
+					palette[h * 256 + i + RemapStart] = palette[pal_idx];
 				}
+			}
+		}
 
-				this.remappable = true;
-				this.buffer = discard_buffer ? null : remap;
-				return this;
-			}
-			else
-			{
-				if (discard_buffer)
-					buffer = null;
-				return null;
-			}
+		private uint[] palette;
+		private Texture texture;
+		private bool remappable;
+		private bool cycles;
+
+		/// Get the texture.
+		public Texture Texture { get => texture; }
+
+		/// Whether this texture is remappable.
+		public bool IsRemappable { get => remappable; }
+
+		/// Whether this texture can cycle its colours.
+		public bool Cycles { get => cycles; }
+
+		public Palette(Stream stream, int shift = 2,
+			bool hasShadow = false, bool cycles = false, byte[] cpsRemap = null)
+		{
+			remappable = (cpsRemap != null);
+			var height = remappable ? Constants.HouseColors : 1;
+			var palette = new uint[256 * height];
+			ReadBuffer(stream, palette, shift, hasShadow);
+			if(remappable)
+				MakeRemappable(palette, cpsRemap, Constants.HouseColors);
+			texture = new Texture(palette, 256, height, PixelType.UnsignedByte,
+				PixelFormat.Bgra, PixelInternalFormat.Rgba, TextureMinFilter.Nearest);
+			if(cycles)
+				this.palette = palette;
+			this.cycles = cycles;
 		}
 	}
 
-	class PaletteParameters
+	public class PaletteParameters
 	{
 		public int shift;
-		public bool fix_special;
+		public bool hasShadow;
+		public bool cycles;
+		public byte[] cpsRemap;
 	}
 
 	class PaletteLoader : IAssetLoader
@@ -112,15 +94,19 @@ namespace CCEngine.FileFormats
 		public object Load(AssetManager assets, VFS.VFSHandle handle, object parameters)
 		{
 			var shift = 2; // ra1 palette colours are stored as 6-bit values.
-			var fix_special = false;
+			var hasShadow = false;
+			var cycles = false;
+			byte[] cpsRemap = null;
 			if(parameters != null)
 			{
 				var p = (PaletteParameters)parameters;
 				shift = p.shift;
-				fix_special = p.fix_special;
+				hasShadow = p.hasShadow;
+				cycles = p.cycles;
+				cpsRemap = p.cpsRemap;
 			}
 			using (var stream = handle.Open())
-				return new Palette(stream, shift, fix_special);
+				return new Palette(stream, shift, hasShadow, cycles, cpsRemap);
 		}
 	}
 }

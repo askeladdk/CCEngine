@@ -79,7 +79,7 @@ namespace CCEngine.Rendering
 		/// different than the currently active palette.
 		public void PushPalette(Palette palette)
 		{
-			var paltex = palette.ToTexture();
+			var paltex = palette.Texture;
 			if(paltex != activePalette)
 				Flush();
 			paletteStack.Push(activePalette);
@@ -152,9 +152,9 @@ namespace CCEngine.Rendering
 			int color = -1, byte remap = 0, byte cloak = 0)
 		{
 			Flush(BatchType.Sprite);
-			var w = sprite.FrameSize.Width;
-			var h = sprite.FrameSize.Height;
-			var t = sprite.ToTexture().Handle;
+			var w = sprite.Size.Width;
+			var h = sprite.Size.Height;
+			var t = sprite.Texture.Handle;
 			var instance = new TexturedQuadInstance
 			{
 				translation = new Vector2(x, y),

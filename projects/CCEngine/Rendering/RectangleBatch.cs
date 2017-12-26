@@ -37,7 +37,6 @@ namespace CCEngine.Rendering
 		private BufferObject<byte>  ebo_ix;
 		private VertexArrayObject vao;
 		private ShaderProgram program;
-		private Texture paletteTexture;
 
 		private void MakeVAO()
 		{
@@ -71,11 +70,6 @@ namespace CCEngine.Rendering
 		{
 			this.program = program;
 			MakeVAO();
-		}
-
-		public void SetPalette(Palette palette)
-		{
-			this.paletteTexture = palette.ToTexture();
 		}
 
 		protected override void BeginSubmit()

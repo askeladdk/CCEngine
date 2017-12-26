@@ -67,6 +67,7 @@ namespace CCEngine
 			this.assets.RegisterLoader<TmpFile>(new TmpLoader());
 			this.assets.RegisterLoader<Map>(new MapLoader());
 			this.assets.RegisterLoader<FntFile>(new FontLoader());
+			this.assets.RegisterLoader<BinFile>(new BinFLoader());
 			//this.assets.RegisterLoader<World>(new WorldLoader());
 
 			this.logger = new Logger(this, LogLevel.Debug);

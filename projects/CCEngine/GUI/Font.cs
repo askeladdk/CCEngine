@@ -17,7 +17,7 @@ namespace CCEngine.GUI
 		public Palette Palette { get => pal; }
 
 		/// Maximum width and height of a glyph in pixels.
-		public Size CharacterSize { get => fnt.FrameSize; }
+		public Size CharacterSize { get => fnt.Size; }
 
 		// Constructor.
 		public Font(FntFile fnt, Palette pal)

@@ -56,25 +56,19 @@ namespace CCEngine.Rendering
 			return Arrange(frames, frame_w, frame_h, tile_w, tile_h, image_nw, image_nh, out image_size);
 		}
 
-		public static Vector4 DefaultRegion = new Vector4(0, 0, 1, 1);
-
-		private readonly Size image_size;
-		private readonly Size frame_size;
-		//private readonly Vector4[] frame_regions;
-		private readonly Palette palette;
-		private readonly int nframes;
-		private byte[] buffer;
+		private Size image_size;
+		private Size frame_size;
+		private Palette palette;
+		private int nframes;
 		private Texture texture;
 		private int nframes_w;
 		private float frame_texw;
 		private float frame_texh;
 
-		public int FrameCount { get { return nframes; } }
-		public Size ImageSize { get { return image_size; } }
-		public Size FrameSize { get { return frame_size; } }
-		public Palette Palette { get { return palette; } }
-		public byte[] Buffer { get { return buffer; } }
-		public bool IsBuffered { get { return buffer != null; } }
+		public int FrameCount { get => nframes; }
+		public Size Size { get => frame_size; }
+		public Palette Palette { get => palette; }
+		public Texture Texture { get => texture; }
 
 		/*
 		private Vector4[] MakeRegions(int nframes, int nframes_w, float xratio, float yratio)
@@ -90,55 +84,51 @@ namespace CCEngine.Rendering
 		}
 		*/
 
+		private static Texture MakeTexture(byte[] buffer, Size sz)
+		{
+			return new Texture(buffer, sz.Width, sz.Height,
+				PixelType.UnsignedByte,
+				PixelFormat.Red,
+				PixelInternalFormat.R8,
+				TextureMinFilter.Nearest);
+		}
+
 		public Sprite(byte[] frame, int frame_w, int frame_h, Palette palette = null)
 		{
-			this.nframes     = 1;
-			this.palette     = palette;
-			this.frame_size  = new Size(frame_w, frame_h);
-			this.image_size  = new Size(frame_w, frame_h);
-			this.buffer      = frame;
-			this.nframes_w   = 1;
-			this.frame_texw  = 1;
-			this.frame_texh  = 1;
+			this.nframes    = 1;
+			this.palette    = palette;
+			this.frame_size = new Size(frame_w, frame_h);
+			this.image_size = new Size(frame_w, frame_h);
+			this.nframes_w  = 1;
+			this.frame_texw = 1;
+			this.frame_texh = 1;
+			this.texture    = MakeTexture(frame, image_size);
 		}
 
 		public Sprite(byte[][] frames, int frame_w, int frame_h, Palette palette = null)
 		{
-			this.nframes     = frames.Length;
-			this.palette     = palette;
-			this.frame_size  = new Size(frame_w, frame_h);
-			this.buffer      = Arrange(frames, frame_w, frame_h, false, out this.image_size);
-			this.nframes_w   = image_size.Width / frame_size.Width;
-			this.frame_texw  = (float)frame_size.Width / image_size.Width;
-			this.frame_texh  = (float)frame_size.Height / image_size.Height;
+			var buffer = Arrange(frames, frame_w, frame_h, false, out this.image_size);
+			this.texture    = MakeTexture(buffer, image_size);
+			this.nframes    = frames.Length;
+			this.palette    = palette;
+			this.frame_size = new Size(frame_w, frame_h);
+			this.nframes_w  = image_size.Width / frame_size.Width;
+			this.frame_texw = (float)frame_size.Width / image_size.Width;
+			this.frame_texh = (float)frame_size.Height / image_size.Height;
 		}
 
 		public Sprite(byte[][] frames, int frame_w, int frame_h,
 			int image_nw, int image_nh, Palette palette = null)
 		{
-			this.nframes     = frames.Length;
-			this.palette     = palette;
-			this.frame_size  = new Size(frame_w, frame_h);
-			this.buffer      = Arrange(frames, frame_w, frame_h, frame_w, frame_h,
+			var buffer = Arrange(frames, frame_w, frame_h, frame_w, frame_h,
 				image_nw, image_nh, out this.image_size);
-			this.nframes_w   = image_size.Width / frame_size.Width;
-			this.frame_texw  = (float)frame_size.Width / image_size.Width;
-			this.frame_texh  = (float)frame_size.Height / image_size.Height;
-		}
-
-		public Texture ToTexture(bool discard_buffer = false)
-		{
-			if (IsBuffered && texture == null)
-			{
-				texture = new Texture(buffer, image_size.Width, image_size.Height,
-					PixelType.UnsignedByte,
-					PixelFormat.Red,
-					PixelInternalFormat.R8,
-					TextureMinFilter.Nearest);
-			}
-			if (discard_buffer)
-				buffer = null;
-			return texture;
+			this.texture    = MakeTexture(buffer, image_size);
+			this.nframes    = frames.Length;
+			this.palette    = palette;
+			this.frame_size = new Size(frame_w, frame_h);
+			this.nframes_w  = image_size.Width / frame_size.Width;
+			this.frame_texw = (float)frame_size.Width / image_size.Width;
+			this.frame_texh = (float)frame_size.Height / image_size.Height;
 		}
 
 #if false
