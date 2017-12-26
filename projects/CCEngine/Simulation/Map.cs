@@ -149,7 +149,6 @@ namespace CCEngine.Simulation
 		public void Render(float dt)
 		{
 			var renderer = Game.Instance.Renderer;
-			renderer.SetPalette(this.theater.Palette);
 
 			// Calculate viewable map area.
 			Point screenTopLeft;

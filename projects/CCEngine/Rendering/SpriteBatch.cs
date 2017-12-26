@@ -91,9 +91,9 @@ namespace CCEngine.Rendering
 			MakeVAO();
 		}
 
-		public void SetPalette(Palette palette)
+		public void SetPalette(Texture palette)
 		{
-			this.paletteTexture = palette.ToTexture();
+			this.paletteTexture = palette;
 		}
 
 		protected override void BeginSubmit()

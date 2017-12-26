@@ -27,6 +27,12 @@ namespace CCEngine
 			return s.ReadBytes(Helpers.SizeOf<T>()).TypeCastByteBuffer<T>();
 		}
 
+		public static void ReadStructs<T>(this Stream s, T[] buf, int count) where T : struct
+		{
+			for(var i = 0; i < count; i++)
+				buf[i] = s.ReadStruct<T>();
+		}
+
 		public static int BinarySearch<T, TKey>(this IList<T> tf, TKey target, Func<T, TKey> selector)
 		{
 			int lo = 0;

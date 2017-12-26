@@ -33,9 +33,9 @@ namespace CCEngine.FileFormats
 				buffer[i] = (a << 24) | (r << 16) | (g << 8) | b;
 			}
 
+			buffer[Transparent] = 0;
 			if (fix_special)
 			{
-				buffer[Transparent] = 0;
 				buffer[Shadow] = ShadowAlpha << 24;
 			}
 
@@ -47,12 +47,7 @@ namespace CCEngine.FileFormats
 		public bool IsRemappable { get { return remappable; } }
 		public uint[] Buffer { get { return buffer; } }
 
-		public Palette(uint[] buffer)
-		{
-			this.buffer = buffer;
-		}
-
-		public Palette(Stream stream, int shift = 0, bool fix_special = false)
+		public Palette(Stream stream, int shift, bool fix_special)
 		{
 			this.buffer = ReadBuffer(stream, shift, fix_special);
 		}
@@ -106,12 +101,26 @@ namespace CCEngine.FileFormats
 		}
 	}
 
+	class PaletteParameters
+	{
+		public int shift;
+		public bool fix_special;
+	}
+
 	class PaletteLoader : IAssetLoader
 	{
 		public object Load(AssetManager assets, VFS.VFSHandle handle, object parameters)
 		{
+			var shift = 2; // ra1 palette colours are stored as 6-bit values.
+			var fix_special = false;
+			if(parameters != null)
+			{
+				var p = (PaletteParameters)parameters;
+				shift = p.shift;
+				fix_special = p.fix_special;
+			}
 			using (var stream = handle.Open())
-				return new Palette(stream, 2, true);
+				return new Palette(stream, shift, fix_special);
 		}
 	}
 }

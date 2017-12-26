@@ -97,16 +97,13 @@ namespace CCEngine.Logic
 			var g = Game.Instance;
 			var renderer = g.Renderer;
 
+			renderer.PushPalette(g.Map.Theater.Palette);
 			g.Map.Render(dt);
 			hud.Render(renderer);
+			renderer.PopPalette();
 
-			// renderer.Rectangle(0, 0, 10, 10, -1);
-			// renderer.Line(10, 10, 100, 10, -1,3);
-			// renderer.Line(100, 10, 100, 100, -1,3);
-			// renderer.Line(100, 100, 10, 100, -1,3);
-			// renderer.Line(10, 100, 10, 10, -1,3);
-			// renderer.Line(10, 10, 100, 100, Color4.BlueViolet.ToArgb());
-			// renderer.Flush();
+			var grad6 = g.GetFont("GRAD6FNT");
+			renderer.Text(grad6, "Reinforcements have arrived.", 2, 16);
 		}
 	}
 }

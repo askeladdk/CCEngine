@@ -66,6 +66,7 @@ namespace CCEngine
 			this.assets.RegisterLoader<Sprite>(new SpriteLoader());
 			this.assets.RegisterLoader<TmpFile>(new TmpLoader());
 			this.assets.RegisterLoader<Map>(new MapLoader());
+			this.assets.RegisterLoader<FntFile>(new FontLoader());
 			//this.assets.RegisterLoader<World>(new WorldLoader());
 
 			this.logger = new Logger(this, LogLevel.Debug);
@@ -80,6 +81,7 @@ namespace CCEngine
 		public void Initialise()
 		{
 			this.renderer = new Renderer();
+			this.InitialiseGUI();
 			this.SetRules();
 			this.LoadWorldData();
 		}
@@ -124,6 +126,7 @@ namespace CCEngine
 			var alpha = Helpers.Clamp(interpolatedTime / (float)UpdatePeriod, 0.0f, 1.0f);
 			interpolatedTime += (float)e.Time;
 			this.logic.Render(alpha);
+			this.renderer.Flush();
 			SwapBuffers();
 		}
 
