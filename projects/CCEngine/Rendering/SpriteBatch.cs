@@ -71,7 +71,7 @@ namespace CCEngine.Rendering
 			vao.SetAttrib(2, 2, VertexAttribPointerType.Float, false, stride, 0, 1);
 			vao.SetAttrib(3, 2, VertexAttribPointerType.Float, false, stride, 8, 1);
 			vao.SetAttrib(4, 4, VertexAttribPointerType.Float, false, stride, 16, 1);
-			vao.SetAttrib(5, 2, VertexAttribPointerType.UnsignedByte, true, stride, 32, 1);
+			vao.SetAttrib(5, 4, VertexAttribPointerType.UnsignedByte, true, stride, 32, 1);
 			vao.SetAttrib(6, 4, VertexAttribPointerType.UnsignedByte, true, stride, 36, 1);
 			vbo_spr.Unbind();
 
