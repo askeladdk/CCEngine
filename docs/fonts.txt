@@ -3,28 +3,24 @@ RA1 Fonts and Palettes
 
 This document explains what fonts RA1 uses and how they are paletted.
 
-Fonts are encoded in 4BPP and hence can only use up to 16 colours,
-though most fonts use either the lower 8 or the upper 8 palette entries.
-This means that one palette file can be used by multiple fonts.
+Fonts are encoded in 4BPP and hence can only use up to 16 colours, though most fonts use either the lower 8 or the upper 8 palette entries. This means that one palette file can be used by multiple fonts.
 
-But which palette goes with which font? This is not documented anywhere and there no specific
-font palettes to be found in the .mix files. Long story short, I reverse engineered
-the palettes by examining screenshots and using Nyerguds' Font Editor.
+But which palette goes with which font? This is not documented anywhere and there no specific font palettes to be found in the .mix files. Long story short, I reverse engineered the palettes by examining screenshots and using Nyerguds' Font Editor.
 
 I created the following palettes which can be used by the fonts:
 - FONT.PAL: The lower half has a white hue and the upper half has a green gradient. Which half is used depends on the font.
-- HELP.PAL: Used together with HELP.FNT to display tooltips.
+- HELP.PAL: Used together with HELP.FNT to display tooltips in yellow-black colours.
 - GRAY.PAL: A generic 16 colour grayscale palette.
 - VCR.PAL: This is a RA1 version of CNCs VCR.PAL and has a white hued gradient in its upper half.
 
 These are the fonts used by RA1:
 - GRAD6FNT.FNT: Used to display the in-game messages to inform the player. Use with FONT.PAL.
 - 12METFNT.FNT: Used to caption menu widgets and the mission briefing text. Use with FONT.PAL to get a white hue. In some interface menus this font has a differently coloured hue.
-- HELP.FNT: Tooltip font. Use with HELP.PAL for yellow-black colours.
+- HELP.FNT: Tooltip font. Use with HELP.PAL.
 - SCOREFNT.FNT: Used in the score screen. Works with GRAY.PAL though the precise palette is not yet known.
-- VCR.FNT: A bigger gradient font, possibly used to write the "mission accomplished" text? Can be used with VCR.PAL for a white gradient or FONT.PAL for a green gradient.
-- TYPE.FNT: This typewriter font is unused but might be cool as an alternative mission briefing font.
-- LED.FNT: Unused but has wide spacing between characters.
-- 3POINT.FNT: Too small to be readable.
-- 6POINT.FNT: Non-gradient version of GRAD6FNT. Possibly used by the DOS version of RA1.
-- 8POINT.FNT: Bigger than 3POINT yet despite its name smaller than 6POINT.
+- VCR.FNT: A bigger gradient font, possibly used to write the "mission accomplished" text? Can be used with VCR.PAL for steel-gray, FONT.PAL for green, or GRAY.PAL for white hue.
+- TYPE.FNT: A rather large and not terribly attractive typewriter font. No wonder it's unused.
+- LED.FNT: Unused but has wide spacing between characters. Use with FONT.PAL.
+- 3POINT.FNT: Tiny 3 pixel width font. Use with FONT.PAL.
+- 6POINT.FNT: Same as HELP.FNT except white with black outline. Use with FONT.PAL.
+- 8POINT.FNT: Despite its name is more compact than 6POINT. Use with FONT.PAL.
