@@ -50,7 +50,7 @@ namespace CCEngine
 		{
 			object asset;
 			filename = filename.ToUpper();
-			if (!this.TryGet(filename, out asset))
+			if (!cache || !this.TryGet(filename, out asset))
 			{
 				IAssetLoader loader;
 				if (!this.loaders.TryGetValue(typeof(T), out loader))
