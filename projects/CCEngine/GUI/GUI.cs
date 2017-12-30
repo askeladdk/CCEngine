@@ -58,9 +58,9 @@ namespace CCEngine.GUI
 		public Point Mouse { get => mouse; }
 
 		/// Must be called whenever the mouse moves.
-		public void MouseMove(int mx, int my)
+		public void MouseMove(Point mouse)
 		{
-			this.mouse = new Point(mx, my);
+			this.mouse = mouse;
 		}
 
 		/// Must be called whenever a mouse button is pressed or let go.

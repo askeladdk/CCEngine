@@ -1,4 +1,4 @@
-using OpenTK;
+using System.Drawing;
 
 namespace CCEngine
 {
@@ -18,12 +18,10 @@ namespace CCEngine
 			this.resolution = new Size(resw, resh);
 		}
 
-		public Rectangle UpdateViewPort(Rectangle clientRectangle)
+		public Rectangle UpdateViewPort(int screenw, int screenh)
 		{
 			var resw = (int)(resolution.Width * dpiScale);
 			var resh = (int)(resolution.Height * dpiScale);
-			var screenw = clientRectangle.Width;
-			var screenh = clientRectangle.Height;
 			var vieww = (screenw / resw) * resw;
 			var viewh = (vieww * resh) / resw;
 			var borderw = screenw - vieww;

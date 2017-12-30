@@ -96,7 +96,8 @@ namespace CCEngine
 		protected override void OnResize(EventArgs e)
 		{
 			base.OnResize(e);
-			GL.Viewport(this.display.UpdateViewPort(ClientRectangle));
+			var vp = this.display.UpdateViewPort(ClientRectangle.Width, ClientRectangle.Height);
+			GL.Viewport(vp.X, vp.Y, vp.Width, vp.Height);
 			var res = this.display.Resolution;
 			this.projection = Matrix4.CreateOrthographicOffCenter(
 				0, res.Width, res.Height, 0, -1, 1);

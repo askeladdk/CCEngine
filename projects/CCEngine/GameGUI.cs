@@ -1,4 +1,6 @@
+using System.Drawing;
 using System.Collections.Generic;
+using OpenTK.Input;
 using CCEngine.FileFormats;
 using CCEngine.GUI;
 
@@ -40,27 +42,28 @@ namespace CCEngine
 		}
 
 
-		protected override void OnKeyDown(OpenTK.Input.KeyboardKeyEventArgs e)
+		protected override void OnKeyDown(KeyboardKeyEventArgs e)
 		{
 			base.OnKeyDown(e);
 			gui.KeyDown(e);
 		}
 
-		protected override void OnMouseMove(OpenTK.Input.MouseMoveEventArgs e)
+		protected override void OnMouseMove(MouseMoveEventArgs e)
 		{
 			base.OnMouseMove(e);
-			OpenTK.Point point;
-			if(display.NormaliseScreenPosition(e.Position, out point))
-				gui.MouseMove(point.X, point.Y);
+			var mouse = new Point(e.Position.X, e.Position.Y);
+			Point point;
+			if(display.NormaliseScreenPosition(mouse, out point))
+				gui.MouseMove(point);
 		}
 
-		protected override void OnMouseUp(OpenTK.Input.MouseButtonEventArgs e)
+		protected override void OnMouseUp(MouseButtonEventArgs e)
 		{
 			base.OnMouseUp(e);
 			gui.MousePress(e.Button, false);
 		}
 
-		protected override void OnMouseDown(OpenTK.Input.MouseButtonEventArgs e)
+		protected override void OnMouseDown(MouseButtonEventArgs e)
 		{
 			base.OnMouseDown(e);
 			gui.MousePress(e.Button, true);
