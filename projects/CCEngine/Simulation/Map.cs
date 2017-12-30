@@ -21,9 +21,7 @@ namespace CCEngine.Simulation
 		private Registry registry;
 		private PRadioReceiver radiorec;
 
-		private Rectangle objectBounds;
 		public CPos cellHighlight = new CPos(0);
-		public CPos[] pathHighlight;
 
 		public Registry Registry { get { return registry; } }
 		public Rectangle Bounds { get { return bounds; } }
@@ -137,124 +135,6 @@ namespace CCEngine.Simulation
 					yield return Tuple.Create(neighbor, co.Item3);
 			}
 		}
-		#endregion
-
-		#region Rendering
-
-		public Rectangle ObjectBounds
-		{
-			get { return this.objectBounds; }
-		}
-
-		public void Render(float dt)
-		{
-			var renderer = Game.Instance.Renderer;
-
-			// Calculate viewable map area.
-			Point screenTopLeft;
-			Rectangle cellBounds;
-			Game.Instance.Camera.GetRenderArea(out screenTopLeft, out cellBounds);
-
-			// Only render objects that are within this map pixel rectangle.
-			this.objectBounds = new Rectangle(
-				Constants.TileSize * Math.Max(0, cellBounds.X - 0),
-				Constants.TileSize * Math.Max(0, cellBounds.Y - 0),
-				Constants.TileSize * Math.Min(cellBounds.Width + 0, Constants.MapSize),
-				Constants.TileSize * Math.Min(cellBounds.Height + 0, Constants.MapSize)
-			);
-
-			// Crop rendering to HUD camera area.
-			Game.Instance.ScissorCamera();
-			GL.Enable(EnableCap.ScissorTest);
-
-			// Render ground layer.
-			//batch.SetBlending(false);
-			this.RenderGround(renderer, cellBounds, screenTopLeft);
-			renderer.Flush();
-
-			// Render entities.
-			//batch.SetBlending(true);
-			//this.RenderOccupyLayer(batch, cellBounds, screenTopLeft);
-
-			this.registry.Render(dt);
-			//batch.Submit();
-
-			// Finish up.
-			//batch.SetBlending(false);
-			renderer.Flush();
-			GL.Disable(EnableCap.ScissorTest);
-		}
-
-		public void RenderGround(Renderer renderer, Rectangle cellBounds, Point screenTopLeft)
-		{
-			int screenY = screenTopLeft.Y + Constants.TileSizeHalf;
-			for (int y = cellBounds.Top; y < cellBounds.Bottom; y++)
-			{
-				int screenX = screenTopLeft.X + Constants.TileSizeHalf;
-				for (int x = cellBounds.Left; x < cellBounds.Right; x++)
-				{
-					var cpos = new CPos(x, y);
-					var cell = this.GetCell(cpos);
-					var landtype = cell.Land.Type;
-
-					OpenTK.Graphics.Color4 color = OpenTK.Graphics.Color4.White;
-
-					if(cpos == this.cellHighlight)
-						color = OpenTK.Graphics.Color4.LightBlue;
-					else if (this.pathHighlight != null && this.pathHighlight.Contains(cpos))
-						color = OpenTK.Graphics.Color4.Blue;
-					else if (cell.OccupyEntityId != 0)
-						color = OpenTK.Graphics.Color4.Purple;
-					else if(landtype == LandType.Rock)
-						color = OpenTK.Graphics.Color4.Red;
-					else if (landtype == LandType.Rough)
-						color = OpenTK.Graphics.Color4.Yellow;
-					else if (landtype == LandType.Road)
-						color = OpenTK.Graphics.Color4.YellowGreen;
-					else if (landtype == LandType.Beach)
-						color = OpenTK.Graphics.Color4.LightSeaGreen;
-					else if (landtype == LandType.Water)
-						color = OpenTK.Graphics.Color4.LightGreen;
-					else if (landtype == LandType.River)
-						color = OpenTK.Graphics.Color4.Green;
-
-					renderer.Blit(this.theater.GetTemplate(cell.TmpId),
-						cell.TmpIndex, screenX, screenY, color.ToArgb());
-					screenX += Constants.TileSize;
-				}
-				screenY += Constants.TileSize;
-			}
-		}
-
-#if false
-		public void RenderOccupyLayer(SpriteBatch batch, Rectangle cellBounds, Point screenTopLeft)
-		{
-			batch.SetColor(OpenTK.Graphics.Color4.Yellow);
-			int screenY = screenTopLeft.Y;
-			for (int y = cellBounds.Top; y < cellBounds.Bottom; y++)
-			{
-				int screenX = screenTopLeft.X;
-				for (int x = cellBounds.Left; x < cellBounds.Right; x++)
-				{
-					var tile = this.GetTile(x, y);
-					var entityId = tile.OccupyEntityId;
-
-					if (entityId != 0)
-					{
-						var animation = this.registry.GetComponent<CAnimation>(entityId);
-
-						batch
-							.SetSprite(animation.Sprite)
-							.RenderTile(animation.Frame, tile.OccupyTileId, screenX, screenY);
-					}
-					screenX += Constants.TileSize;
-				}
-				screenY += Constants.TileSize;
-			}
-			batch.SetColor();
-		}
-#endif
-		
 		#endregion
 
 		#region Map Loading

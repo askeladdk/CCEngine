@@ -23,7 +23,7 @@ namespace CCEngine.Simulation
 
 		public override bool IsRenderLoop {get => false; }
 
-		protected override void Process(float dt, int entityId)
+		protected override void Process(object e, int entityId)
 		{
 			var g = Game.Instance;
 			var loco = Registry.GetComponent<CLocomotion>(entityId);
@@ -39,6 +39,11 @@ namespace CCEngine.Simulation
 	}
 
 
+	class RenderArgs
+	{
+		public float alpha;
+		public Rectangle objectBounds;
+	}
 
 	class PRender : SingleProcessor
 	{
@@ -57,17 +62,18 @@ namespace CCEngine.Simulation
 
 		public override bool IsRenderLoop { get => true; }
 
-		protected override void Process(float alpha, int entityId)
+		protected override void Process(object e, int entityId)
 		{
 			var g = Game.Instance;
 			var renderer = g.Renderer;
 			var camera = g.Camera;
-			var objectBounds = g.Map.ObjectBounds;
+			var args = e as RenderArgs;
+			var objectBounds = args.objectBounds;
 
 			var loco = Registry.GetComponent<CLocomotion>(entityId);
 			var anim = Registry.GetComponent<CAnimation>(entityId);
 
-			var pos = loco.InterpolatedPosition(alpha);
+			var pos = loco.InterpolatedPosition(args.alpha);
 			var bb = anim.AABB.Translate(pos.X, pos.Y);
 
 			if (objectBounds.IntersectsWith(bb))

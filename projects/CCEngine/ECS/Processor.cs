@@ -13,7 +13,7 @@ namespace CCEngine.ECS
 
 		public abstract bool IsActive { get; }
 		public abstract bool IsRenderLoop { get; }
-		public abstract void Process(float dt);
+		public abstract void Process(object e);
 
 		public virtual void Dispose()
 		{
@@ -39,14 +39,14 @@ namespace CCEngine.ECS
 	public abstract class SingleProcessor : Processor
 	{
 		protected abstract IFilter Filter { get; }
-		protected abstract void Process(float dt, int entityId);
+		protected abstract void Process(object e, int entityId);
 
 		protected SingleProcessor(Registry registry) : base(registry) { }
 
-		public override void Process(float dt)
+		public override void Process(object e)
 		{
 			foreach (var entityId in Filter.Entities)
-				Process(dt, entityId);
+				Process(e, entityId);
 		}
 	}
 
@@ -57,17 +57,17 @@ namespace CCEngine.ECS
 	public abstract class PairProcessor : Processor
 	{
 		protected abstract IFilter Filter { get; }
-		protected abstract void Process(float dt, int entityId1, int entityId2);
+		protected abstract void Process(object e, int entityId1, int entityId2);
 
 		protected PairProcessor(Registry registry) : base(registry) { }
 
-		public override void Process(float dt)
+		public override void Process(object e)
 		{
 			var entities = Filter.Entities;
 			var length = entities.Count();
 			for (var i = 0; i < length; i++)
 				for (var j = 1 + i; j < length; j++)
-					Process(dt, entities.ElementAt(i), entities.ElementAt(j));
+					Process(e, entities.ElementAt(i), entities.ElementAt(j));
 		}
 	}
 
@@ -82,18 +82,18 @@ namespace CCEngine.ECS
 
 		protected abstract int MaxMessagesPerFrame { get; }
 
-		protected abstract void Process(float dt, TMessage message);
+		protected abstract void Process(object e, TMessage message);
 
 		protected QueueProcessor(Registry registry) : base(registry) { }
 
-		public override void Process(float dt)
+		public override void Process(object e)
 		{
 			int max = MaxMessagesPerFrame;
 			int count = messages.Count;
 			if (max > 0)
 				count = Math.Min(MaxMessagesPerFrame, messages.Count);
 			while (count-- > 0)
-				Process(dt, messages.Dequeue());
+				Process(e, messages.Dequeue());
 		}
 	}
 }

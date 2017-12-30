@@ -1,78 +1,93 @@
 ﻿using System.Diagnostics;
 using System.Drawing;
+using System.Collections.Generic;
 using System.Linq;
 using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Input;
 using CCEngine.FileFormats;
 using CCEngine.Rendering;
 using CCEngine.Simulation;
 using CCEngine.Algorithms;
+using CCEngine.GUI;
 
 namespace CCEngine.Logic
 {
-	class MainMenu : IGameState
+	class MainMenu : IGameState, IWidget
 	{
+		public bool CanInteract { get => true; }
+		public System.Drawing.Rectangle Region { get => System.Drawing.Rectangle.Empty; }
+		public IEnumerable<IWidget> Children
+		{
+			get
+			{
+				yield return topBarWidget;
+				yield return sideBarWidget;
+				yield return mapViewWidget;
+			}
+		}
+
+		public void OnInteraction(object sender, InteractionEventArgs e)
+		{
+			var g = Game.Instance;
+			switch(e.Interaction)
+			{
+				case GUI.Interaction.KeyDown:
+					var k = ((KeyInteractionEventArgs)e).Args;
+					if(k.Key == Key.Escape)
+						g.SetState(0);
+					else if (k.Key == Key.Right)
+						g.Camera.Pan(8, 0);
+					else if (k.Key == Key.Left)
+						g.Camera.Pan(-8, 0);
+					else if (k.Key == Key.Up)
+						g.Camera.Pan(0, -8);
+					else if (k.Key == Key.Down)
+						g.Camera.Pan(0, 8);
+					break;
+				default:
+					e.GUI.TakeInput(this, true);
+					break;
+			}
+		}
+
+		public void OnInteraction_Map(object sender, InteractionEventArgs e)
+		{
+			var g = Game.Instance;
+			var pos = e.GUI.Mouse;
+			if(e.Interaction != Interaction.Cold)
+				g.Map.cellHighlight = g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos;
+
+			if(e.Interaction == Interaction.Enter)
+			{
+				g.SendMessage(new MissionMove(28, g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos));
+			}
+		}
+
+
 		private bool initialized;
-		private GUI.GUI gui;
-		private GUI.HUDWidget hud;
+		private TopBarWidget topBarWidget;
+		private SideBarWidget sideBarWidget;
+		private MapViewWidget mapViewWidget;
 
 		private void Initialize()
 		{
 			initialized = true;
 			Game.Instance.LoadMap("scg01ea.ini");
 
-			gui = new GUI.GUI();
-			hud = new GUI.HUDWidget();
-			hud.SetButtonEnabled(GUI.HUDWidget.ButtonMap, false);
-			hud.SetTabVisibility(GUI.HUDWidget.TabTimer, false);
+			topBarWidget = new TopBarWidget();
+			sideBarWidget = new SideBarWidget();
+			mapViewWidget = new MapViewWidget();
+			mapViewWidget.Interaction += OnInteraction_Map;
+			//topBarWidget.SetTabVisibility(TopBarWidget.TabTimer, false);
+			sideBarWidget.SetButtonEnabled(SideBarWidget.ButtonMap, false);
 		}
 
 		public void HandleMessage(IMessage message)
 		{
 			var g = Game.Instance;
-			MsgKeyDown msgk;
-			MsgMouseMove mouseMove;
-			MsgMouseButton mouseButton;
-
-			if(message.Is<MsgKeyDown>(out msgk))
-			{
-				if(msgk.e.Key == OpenTK.Input.Key.Escape)
-					g.SetState(0);
-				else if (msgk.e.Key == OpenTK.Input.Key.Right)
-					g.Camera.Pan(8, 0);
-				else if (msgk.e.Key == OpenTK.Input.Key.Left)
-					g.Camera.Pan(-8, 0);
-				else if (msgk.e.Key == OpenTK.Input.Key.Up)
-					g.Camera.Pan(0, -8);
-				else if (msgk.e.Key == OpenTK.Input.Key.Down)
-					g.Camera.Pan(0, 8);
-			}
-			else if(message.Is<MsgMouseMove>(out mouseMove))
-			{
-				OpenTK.Point pos;
-				if(g.Display.NormaliseScreenPosition(mouseMove.e.Position, out pos))
-				{
-					g.Map.cellHighlight = g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos;
-					gui.MouseMove(pos.X, pos.Y);
-				}
-			}
-			else if(message.Is<MsgMouseButton>(out mouseButton))
-			{
-				if (mouseButton.e.IsPressed)
-				{
-					OpenTK.Point pos;
-					if(g.Display.NormaliseScreenPosition(mouseButton.e.Position, out pos))
-					{
-						g.SendMessage(new MissionMove(28, g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos));
-					}
-				}
-				gui.MousePress(mouseButton.e.Button, mouseButton.e.IsPressed);
-			}
-			else
-			{
-				g.Map.HandleMessage(message);
-			}
+			g.Map.HandleMessage(message);
 		}
 
 		public void Show()
@@ -87,9 +102,9 @@ namespace CCEngine.Logic
 
 		public void Update(float dt)
 		{
-			Game.Instance.Map.Update(dt);
-			gui.Interact(hud);
-			gui.Flip();
+			var g = Game.Instance;
+			g.Map.Update(dt);
+			g.Interact(this);
 		}
 
 		public void Render(float dt)
@@ -98,8 +113,9 @@ namespace CCEngine.Logic
 			var renderer = g.Renderer;
 
 			renderer.PushPalette(g.Map.Theater.Palette);
-			g.Map.Render(dt);
-			hud.Render(renderer);
+			mapViewWidget.Render(renderer, dt);
+			topBarWidget.Render(renderer);
+			sideBarWidget.Render(renderer);
 			renderer.PopPalette();
 
 			var grad6 = g.GetFont("GRAD6FNT");

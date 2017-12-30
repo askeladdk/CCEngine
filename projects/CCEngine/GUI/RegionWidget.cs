@@ -26,9 +26,9 @@ namespace CCEngine.GUI
 			this.region = new Rectangle(x, y, w, h);
 		}
 
-		public void OnInteraction(GUI gui, Interaction interaction)
+		public void OnInteraction(object sender, InteractionEventArgs e)
 		{
-			Interaction?.Invoke(this, new InteractionEventArgs(gui, interaction));
+			Interaction?.Invoke(sender, e);
 		}
 	}
 }

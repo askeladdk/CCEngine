@@ -264,7 +264,7 @@ namespace CCEngine.ECS
 			processors.Remove(processor);
 		}
 
-		public void Update(float dt)
+		public void Update(object e)
 		{
 			while (killQueue.Count > 0)
 			{
@@ -278,14 +278,14 @@ namespace CCEngine.ECS
 
 			foreach (var p in processors)
 				if (p.IsActive && !p.IsRenderLoop)
-					p.Process(dt);
+					p.Process(e);
 		}
 
-		public void Render(float dt)
+		public void Render(object e)
 		{
 			foreach (var p in processors)
 				if (p.IsActive && p.IsRenderLoop)
-					p.Process(dt);
+					p.Process(e);
 		}
 
 		public IEnumerable<int> Entities

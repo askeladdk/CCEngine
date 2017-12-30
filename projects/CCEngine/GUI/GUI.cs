@@ -18,6 +18,8 @@ namespace CCEngine.GUI
 		Hold,
 		/// Any mouse button is let go.
 		Leave,
+		/// Key press.
+		KeyDown,
 	}
 
 
@@ -32,7 +34,7 @@ namespace CCEngine.GUI
 		/// Enumerates this widget's children or null.
 		IEnumerable<IWidget> Children { get; }
 		/// Interact with this widget.
-		void OnInteraction(GUI gui, Interaction interaction);
+		void OnInteraction(object sender, InteractionEventArgs e);
 	}
 
 
@@ -40,7 +42,8 @@ namespace CCEngine.GUI
 	/// The simplest GUI system that could possibly work, based on the IMGUI design.
 	public class GUI
 	{
-		private object activeWidget;
+		private IWidget activeWidget;
+		private IWidget keyboardWidget;
 		private Point mouse;
 		private MouseButton mouseButton;
 		private bool mouseDown;
@@ -67,8 +70,26 @@ namespace CCEngine.GUI
 			this.mouseDown = mouseDown;
 		}
 
+		public void KeyDown(KeyboardKeyEventArgs e)
+		{
+			keyboardWidget?.OnInteraction(keyboardWidget,
+				new KeyInteractionEventArgs(this, Interaction.KeyDown, e));
+		}
+
+		public void TakeInput(IWidget widget, bool force = false)
+		{
+			if(force || keyboardWidget == null)
+				keyboardWidget = widget;
+		}
+
+		public void ReleaseInput(IWidget widget, bool force = false)
+		{
+			if(force || keyboardWidget == widget)
+				keyboardWidget = null;
+		}
+
 		/// The heart of the GUI that determines an interaction on a widget.
-		private Interaction GetInteraction(object widget, Rectangle region)
+		private Interaction GetInteraction(IWidget widget, Rectangle region)
 		{
 			if(region.Contains(mouse))
 			{
@@ -93,12 +114,16 @@ namespace CCEngine.GUI
 		/// Interact with a widget.
 		public void Interact(IWidget widget)
 		{
+			if(widget.CanInteract)
+			{
+				var interaction = GetInteraction(widget, widget.Region);
+				widget.OnInteraction(widget, new InteractionEventArgs(this, interaction));
+			}
+
 			var children = widget.Children;
 			if(children != null)
 				foreach(var c in children)
 					Interact(c);
-			if(widget.CanInteract)
-				widget.OnInteraction(this, GetInteraction(widget, widget.Region));
 		}
 
 		/// Must be called after all Interact() calls.
@@ -107,6 +132,5 @@ namespace CCEngine.GUI
 			if(!mouseDown)
 				activeWidget = null;
 		}
-
 	}
 }

@@ -1,4 +1,5 @@
 using System;
+using OpenTK.Input;
 
 namespace CCEngine.GUI
 {
@@ -15,6 +16,19 @@ namespace CCEngine.GUI
 		{
 			this.gui = gui;
 			this.interaction = interaction;
+		}
+	}
+
+	public class KeyInteractionEventArgs : InteractionEventArgs
+	{
+		private KeyboardKeyEventArgs e;
+
+		public KeyboardKeyEventArgs Args { get => e; }
+
+		public KeyInteractionEventArgs(GUI gui, Interaction interaction, KeyboardKeyEventArgs e)
+			: base(gui, interaction)
+		{
+			this.e = new KeyboardKeyEventArgs(e);
 		}
 	}
 }

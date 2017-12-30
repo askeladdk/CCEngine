@@ -81,7 +81,7 @@ namespace CCEngine.Simulation
 		public override bool IsRenderLoop { get => false; }
 		protected override int MaxMessagesPerFrame { get => 0; }
 
-		protected override void Process(float dt, IMessage message)
+		protected override void Process(object e, IMessage message)
 		{
 			var g = Game.Instance;
 
@@ -116,7 +116,7 @@ namespace CCEngine.Simulation
 		public override bool IsActive { get => true; }
 		public override bool IsRenderLoop { get => false; }
 
-		protected override void Process(float dt, int entityId)
+		protected override void Process(object e, int entityId)
 		{
 			var radio = Registry.GetComponent<CRadio>(entityId);
 			radio.Process();

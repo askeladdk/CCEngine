@@ -114,6 +114,7 @@ namespace CCEngine
 			this.bus.ProcessMessages();
 			if (!this.logic.Update((float)e.Time))
 				this.Exit();
+			this.gui.Flip();
 			this.globalClock++;
 
 			this.Title = "CCEngine - FPS: {0}, Clock: {1}".F((int)this.UpdateFrequency, this.globalClock);
@@ -129,30 +130,6 @@ namespace CCEngine
 			this.logic.Render(alpha);
 			this.renderer.Flush();
 			SwapBuffers();
-		}
-
-		protected override void OnKeyDown(OpenTK.Input.KeyboardKeyEventArgs e)
-		{
-			base.OnKeyDown(e);
-			this.SendMessage(new MsgKeyDown(e));
-		}
-
-		protected override void OnMouseMove(OpenTK.Input.MouseMoveEventArgs e)
-		{
-			base.OnMouseMove(e);
-			this.SendMessage(new MsgMouseMove(e));
-		}
-
-		protected override void OnMouseUp(OpenTK.Input.MouseButtonEventArgs e)
-		{
-			base.OnMouseUp(e);
-			this.SendMessage(new MsgMouseButton(e));
-		}
-
-		protected override void OnMouseDown(OpenTK.Input.MouseButtonEventArgs e)
-		{
-			base.OnMouseDown(e);
-			this.SendMessage(new MsgMouseButton(e));
 		}
 
 		public void SendMessage(IMessage message)
