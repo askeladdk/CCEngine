@@ -1,37 +1,38 @@
 using System.Drawing;
+using OpenTK.Graphics.OpenGL;
 
 namespace CCEngine
 {
 	public class Display
 	{
+		private static Rectangle CalcViewport(Size screen, Size res, float dpiScale)
+		{
+			var resw = (int)(res.Width * dpiScale);
+			var resh = (int)(res.Height * dpiScale);
+			var vieww = (screen.Width / resw) * resw;
+			var viewh = (vieww * resh) / resw;
+			var borderw = screen.Width - vieww;
+			var borderh = screen.Height - viewh;
+			return new Rectangle(
+				new Point(borderw / 2, borderh / 2),
+				new Size(screen.Width - borderw, screen.Height - borderh)
+			);
+		}
+
 		private Rectangle viewport;
 		private Size resolution;
 		private float dpiScale;
 		private float resolutionScale;
 
-		public Rectangle ViewPort { get { return viewport; } }
-		public Size Resolution { get { return resolution; } }
+		public Rectangle Viewport { get => viewport; }
+		public Size Resolution { get => resolution; }
 
-		public Display(float dpiScale, int resw, int resh)
+		public Display(float dpiScale, int resw, int resh, Rectangle clientRectangle)
 		{
 			this.dpiScale = dpiScale;
 			this.resolution = new Size(resw, resh);
-		}
-
-		public Rectangle UpdateViewPort(int screenw, int screenh)
-		{
-			var resw = (int)(resolution.Width * dpiScale);
-			var resh = (int)(resolution.Height * dpiScale);
-			var vieww = (screenw / resw) * resw;
-			var viewh = (vieww * resh) / resw;
-			var borderw = screenw - vieww;
-			var borderh = screenh - viewh;
-			this.viewport = new Rectangle(
-				new Point(borderw / 2, borderh / 2),
-				new Size(screenw - borderw, screenh - borderh)
-			);
-			this.resolutionScale = this.viewport.Width / (int)(resolution.Width * dpiScale);
-			return viewport;
+			this.viewport = CalcViewport(clientRectangle.Size, this.resolution, dpiScale);
+			this.resolutionScale = viewport.Width / (resw * dpiScale);
 		}
 
 		public bool NormaliseScreenPosition(Point mouse, out Point normalised)
@@ -47,17 +48,6 @@ namespace CCEngine
 			}
 			normalised = new Point();
 			return false;
-		}
-
-		public Rectangle ScissorRectangle(int x, int y, int w, int h)
-		{
-			var scale = dpiScale * resolutionScale;
-			return new Rectangle(
-				(int)(scale * x) + viewport.X,
-				(int)(scale * y) + viewport.Y,
-				(int)(scale * w),
-				(int)(scale * h)
-			);
 		}
 	}
 }

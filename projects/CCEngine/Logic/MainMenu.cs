@@ -112,6 +112,8 @@ namespace CCEngine.Logic
 			var g = Game.Instance;
 			var renderer = g.Renderer;
 
+			renderer.Begin();
+
 			renderer.PushPalette(g.Map.Theater.Palette);
 			mapViewWidget.Render(renderer, dt);
 			topBarWidget.Render(renderer);
@@ -120,6 +122,8 @@ namespace CCEngine.Logic
 
 			var grad6 = g.GetFont("GRAD6FNT");
 			renderer.Text(grad6, "Reinforcements have arrived.", 2, 16);
+
+			renderer.End();
 		}
 	}
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OpenTK;
 using OpenTK.Graphics.OpenGL;
 
 namespace CCEngine.Rendering
@@ -88,7 +89,7 @@ namespace CCEngine.Rendering
 		/// Called once before the batch is submitted to the GPU
 		/// to set up the render state.
 		/// </summary>
-		protected abstract void BeginSubmit();
+		protected abstract void BeginSubmit(FrameBuffer renderTarget);
 
 		/// <summary>
 		/// Called once after the batch is submitted to the GPU
@@ -104,14 +105,14 @@ namespace CCEngine.Rendering
 		/// <summary>
 		/// Submit the batch to the GPU.
 		/// </summary>
-		public void Flush()
+		public void Flush(FrameBuffer renderTarget)
 		{
 			if(count == 0)
 				return;
 
 			queueOverrun = 0;
 			renderCalls = 0;
-			BeginSubmit();
+			BeginSubmit(renderTarget);
 			vbo.Bind();
 
 			var nrenders = Submit(instances, count);

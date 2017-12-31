@@ -72,9 +72,9 @@ namespace CCEngine.Rendering
 			MakeVAO();
 		}
 
-		protected override void BeginSubmit()
+		protected override void BeginSubmit(FrameBuffer renderTarget)
 		{
-			Matrix4 projection = Game.Instance.Projection;
+			var projection = renderTarget.Projection;
 			program.Bind();
 			GL.UniformMatrix4(program["projection"], false, ref projection);
 

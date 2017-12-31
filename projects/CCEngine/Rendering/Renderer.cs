@@ -11,6 +11,27 @@ namespace CCEngine.Rendering
 	/// Rendering Subsystem.
 	public class Renderer
 	{
+		private static float[] quad_xy =
+		{
+			-1, -1,
+			-1,  1,
+			 1, -1,
+			 1,  1,
+		};
+
+		private static float[] quad_uv =
+		{
+			0, 0,
+			0, 1,
+			1, 0,
+			1, 1,
+		};
+
+		private static byte[] quad_ix =
+		{
+			0, 1, 2, 1, 2, 3,
+		};
+
 		/// Build a transformation matrix that is translated, scaled and rotated.
 		private static Matrix4 Transform(float tx, float ty, float sx, float sy, float r)
 		{
@@ -60,10 +81,19 @@ namespace CCEngine.Rendering
 		private BatchType activeBatch = BatchType.None;
 		private Stack<Texture> paletteStack = new Stack<Texture>();
 		private Texture activePalette = null;
+		private FrameBuffer frameBuffer;
+		private FrameBuffer screenBuffer;
+		private VertexArrayObject ppVao;
+		private BufferObject<byte> ppEbo;
+		private BufferObject<float> vboQuadPosition;
+		private BufferObject<float> vboQuadTexcoord;
+		private ShaderProgram blit;
+		private Display display;
 
 		/// Constructor.
-		public Renderer()
+		public Renderer(Display display)
 		{
+			this.display = display;
 			this.spriteBatch = new SpriteBatch(
 				LoadShaderProgram("vert.glsl", "frag.glsl"),
 				2048
@@ -72,6 +102,27 @@ namespace CCEngine.Rendering
 				LoadShaderProgram("rect.v.glsl", "rect.f.glsl"),
 				256
 			);
+
+			vboQuadPosition = new BufferObject<float>(quad_xy, BufferTarget.ArrayBuffer);
+			vboQuadTexcoord = new BufferObject<float>(quad_uv, BufferTarget.ArrayBuffer);
+			ppVao = new VertexArrayObject();
+			ppVao.Bind();
+			vboQuadPosition.Bind();
+			ppVao.SetAttrib(0, 2, VertexAttribPointerType.Float);
+			vboQuadTexcoord.Bind();
+			ppVao.SetAttrib(1, 2, VertexAttribPointerType.Float);
+			ppVao.Enable(0);
+			ppVao.Enable(1);
+			ppVao.Unbind();
+			ppEbo = new BufferObject<byte>(quad_ix, BufferTarget.ElementArrayBuffer);
+
+			this.frameBuffer = new FrameBuffer(display.Resolution, PixelFormat.Rgba);
+
+			this.screenBuffer = new FrameBuffer(display.Viewport);
+
+			this.blit = LoadShaderProgram("blit.v.glsl", "blit.f.glsl");
+
+			screenBuffer.SetViewport();
 		}
 
 		/// Set the active palette.
@@ -99,16 +150,30 @@ namespace CCEngine.Rendering
 			activePalette = palette;
 		}
 
+		public void Begin()
+		{
+			frameBuffer.Bind();
+			frameBuffer.SetViewport();
+			GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+		}
+
+		public void End()
+		{
+			Flush();
+			Blit(frameBuffer, screenBuffer);
+		}
+
 		/// Send the render queue to the GPU.
 		public void Flush()
 		{
 			switch(activeBatch)
 			{
 				case BatchType.Sprite:
-					spriteBatch.Flush();
+					spriteBatch.Flush(frameBuffer);
 					break;
 				case BatchType.Rectangle:
-					rectangleBatch.Flush();
+					rectangleBatch.Flush(frameBuffer);
 					break;
 			}
 		}
@@ -121,6 +186,29 @@ namespace CCEngine.Rendering
 				Flush();
 				activeBatch = switchto;
 			}
+		}
+
+		private void Blit(FrameBuffer src, FrameBuffer dst)
+		{
+			dst.SetViewport();
+			dst.Bind();
+			GL.ClearColor(0.0f, 0.0f, 1.0f, 0.0f);
+			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+			GL.ActiveTexture(TextureUnit.Texture0);
+			src.ColorAttachment.Bind();
+
+			blit.Bind();
+			GL.Uniform1(blit["source"], 0);
+
+			ppVao.Bind();
+			ppEbo.Bind();
+			GL.DrawElements(BeginMode.Triangles, 6, DrawElementsType.UnsignedByte, 0);
+			ppEbo.Unbind();
+			ppVao.Unbind();
+			blit.Unbind();
+			src.ColorAttachment.Unbind();
+			dst.Unbind();
 		}
 
 		/// Draw a rectangle.

@@ -33,7 +33,6 @@ namespace CCEngine
 
 		// Misc
 		private static Game instance;
-		private Matrix4 projection;
 		private Camera camera;
 		private Display display;
 		private float interpolatedTime = 0;
@@ -44,7 +43,6 @@ namespace CCEngine
 		public Map Map { get => this.map; }
 
 		public VFS.VFS VFS { get => this.vfs; }
-		public Matrix4 Projection { get => this.projection; }
 		public Renderer Renderer { get => this.renderer; }
 		public Camera Camera { get => this.camera; }
 		public Display Display { get => this.display; }
@@ -75,38 +73,28 @@ namespace CCEngine
 			this.bus.Subscribe(this.logger);
 			this.bus.Subscribe(this.logic);
 
+			// Initialise camera and logical resolution.
 			this.camera = new Camera();
-			this.display = new Display(this.Width / (float)width, 640, 400);
-		}
 
-		public void Initialise()
-		{
-			this.renderer = new Renderer();
-			this.InitialiseGUI();
-			this.SetRules();
-			this.LoadWorldData();
-		}
+			var cr = this.ClientRectangle;
+			this.display = new Display(this.Width / (float)width,
+				640, 400, ClientRectangle.ToSystemDrawing());
 
-		protected override void OnLoad(EventArgs e)
-		{
-			base.OnLoad(e);
-			GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		}
-
-		protected override void OnResize(EventArgs e)
-		{
-			base.OnResize(e);
-			var vp = this.display.UpdateViewPort(ClientRectangle.Width, ClientRectangle.Height);
-			GL.Viewport(vp.X, vp.Y, vp.Width, vp.Height);
 			var res = this.display.Resolution;
-			this.projection = Matrix4.CreateOrthographicOffCenter(
-				0, res.Width, res.Height, 0, -1, 1);
 			this.camera.ViewPort = new System.Drawing.Rectangle(
 				0,
 				Constants.HUDTopBarHeight,
 				res.Width - Constants.HUDSideBarWidth,
 				res.Height - Constants.HUDTopBarHeight
 			);
+		}
+
+		public void Initialise()
+		{
+			this.renderer = new Renderer(this.display);
+			this.InitialiseGUI();
+			this.SetRules();
+			this.LoadWorldData();
 		}
 
 		protected override void OnUpdateFrame(FrameEventArgs e)
@@ -125,11 +113,9 @@ namespace CCEngine
 		protected override void OnRenderFrame(FrameEventArgs e)
 		{
 			base.OnRenderFrame(e);
-			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			var alpha = Helpers.Clamp(interpolatedTime / (float)UpdatePeriod, 0.0f, 1.0f);
 			interpolatedTime += (float)e.Time;
 			this.logic.Render(alpha);
-			this.renderer.Flush();
 			SwapBuffers();
 		}
 
@@ -154,13 +140,6 @@ namespace CCEngine
 			return bmp;
 		}
 #endif
-
-		public void ScissorCamera()
-		{
-			var v = this.camera.ViewPort;
-			var r = this.display.ScissorRectangle(0, 0, v.Width, v.Height);
-			GL.Scissor(r.X, r.Y, r.Width, r.Height);
-		}
 
 		public T LoadAsset<T>(string filename, bool cache = true, object parameters = null)
 			where T : class

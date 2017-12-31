@@ -96,13 +96,13 @@ namespace CCEngine.Rendering
 			this.paletteTexture = palette;
 		}
 
-		protected override void BeginSubmit()
+		protected override void BeginSubmit(FrameBuffer renderTarget)
 		{
 			GL.ActiveTexture(TextureUnit.Texture1);
 			GL.BindTexture(TextureTarget.Texture2D, paletteTexture.Handle);
 
 			// prepare the program
-			Matrix4 projection = Game.Instance.Projection;
+			var projection = renderTarget.Projection;
 			program.Bind();
 			GL.UniformMatrix4(program["projection"], false, ref projection);
 			// tell the program on which texture units the textures are

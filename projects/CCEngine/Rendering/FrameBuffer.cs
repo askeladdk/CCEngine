@@ -9,10 +9,11 @@ namespace CCEngine.Rendering
 		private Texture colorAttachment;
 		private Texture depthAttachment;
 		private OpenTK.Matrix4 projection;
+		private Rectangle viewport;
 
 		public int Handle { get => handle; }
 
-		public Size Size { get => colorAttachment.Size; }
+		public Rectangle Viewport { get => viewport; }
 
 		public Texture ColorAttachment { get => colorAttachment; }
 
@@ -23,38 +24,32 @@ namespace CCEngine.Rendering
 			get => GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
 		}
 
-		public FrameBuffer(int width, int height)
+		/// Create a reference to the actual screen.
+		public FrameBuffer(Rectangle viewport)
 		{
 			this.handle = 0;
+			this.viewport = viewport;
 			this.projection = OpenTK.Matrix4.CreateOrthographicOffCenter(
-				0, width, height, 0, -1, 1);
+				0, viewport.Width, viewport.Height, 0, -1, 1);
 			this.colorAttachment = null;
 		}
 
-		public FrameBuffer(int width, int height, PixelFormat format, bool withDepthBuffer)
+		/// Create an off-screen buffer.
+		public FrameBuffer(Size size, PixelFormat format)
 		{
 			this.handle = GL.GenFramebuffer();
+			this.viewport = new Rectangle(new Point(0, 0), size);
 			this.projection = OpenTK.Matrix4.CreateOrthographicOffCenter(
-				0, width, height, 0, -1, 1);
+				0, size.Width, size.Height, 0, -1, 1);
 
 			Bind();
 
-			this.colorAttachment = new Texture(width, height,
+			this.colorAttachment = new Texture(size.Width, size.Height,
 				PixelType.UnsignedByte, format,
 				(PixelInternalFormat)format, TextureMinFilter.Nearest);
 			GL.FramebufferTexture2D(FramebufferTarget.Framebuffer,
-				FramebufferAttachment.Color, TextureTarget.Texture2D,
+				FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D,
 				colorAttachment.Handle, 0);
-
-			if(withDepthBuffer)
-			{
-				this.depthAttachment = new Texture(width, height,
-					PixelType.UnsignedByte, PixelFormat.DepthComponent,
-					PixelInternalFormat.DepthComponent, TextureMinFilter.Nearest);
-				GL.FramebufferTexture2D(FramebufferTarget.Framebuffer,
-					FramebufferAttachment.Depth, TextureTarget.Texture2D,
-					depthAttachment.Handle, 0);
-			}
 
 			Unbind();
 		}
@@ -72,6 +67,11 @@ namespace CCEngine.Rendering
 		public void Unbind()
 		{
 			GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+		}
+
+		public void SetViewport()
+		{
+			GL.Viewport(viewport.X, viewport.Y, viewport.Width, viewport.Height);
 		}
 
 		protected override bool Cleanup(bool dispose_unmanaged_objects)

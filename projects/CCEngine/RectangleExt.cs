@@ -14,5 +14,10 @@ namespace CCEngine
 		{
 			return new Rectangle(dx + rect.Left, dy + rect.Top, dx + rect.Width, dy + rect.Height);
 		}
+
+		public static Rectangle ToSystemDrawing(this OpenTK.Rectangle r)
+		{
+			return new Rectangle(r.X, r.Y, r.Width, r.Height);
+		}
 	}
 }

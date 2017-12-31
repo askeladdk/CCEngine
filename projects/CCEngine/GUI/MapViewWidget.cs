@@ -84,7 +84,7 @@ namespace CCEngine.GUI
 			);
 
 			// Crop rendering to HUD camera area.
-			g.ScissorCamera();
+			GL.Scissor(0, 0, 480, 384); // (0,0) is bottom left
 			GL.Enable(EnableCap.ScissorTest);
 
 			// Render ground layer.
