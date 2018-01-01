@@ -1,0 +1,339 @@
+=============================================================================
+      Westwood Studios AUD Audio File Format Description Addendum   5-01-2002
+=============================================================================
+
+By Valery V. Anisimovsky (samael@avn.mccme.ru)
+
+In this document I'll try to extend Vladan Bato's description of .AUD audio
+file format used in some Westwood Studios games.
+Namely, Bato's AUD3.TXT describes IMA ADPCM compressed AUDs used in C&C and
+Red Alert and what I'll try to describe here is Westwood ADPCM compressed AUDs
+used in Legend Of Kyrandia III: Malcolm's Revenge (and, also some files in
+C&C): Malcolm's music, sound FX, speech and video soundtracks.
+Also described is the format of soundtracks in C&C, Red Alert, Tiberian Sun,
+Dune 2000. Probably, the formats described here are used in some other
+Westwood games, e.g.: Lands Of Lore 2,3, Blade Runner.
+
+AUD3.TXT and VQA_FRMT.TXT to which I refer in this document may be found
+on Wotsit (www.wotsit.org) or on Vladan Bato's pages link to which is given
+in the end of this document. They're also may be found on File Formats Site:
+http://fileformat.da.ru
+
+The files this document deals with have extensions: .AUD, .TLK, .PAK, .VQA.
+
+Throughout this document I use C-like notation.
+
+All numbers in all structures described in this document are stored in files
+using little-endian (Intel) byte order.
+
+=============
+1. AUD Files
+=============
+
+Malcolm's AUD files have the same format as C&C's AUDs (which is described
+in AUD3.TXT) with only one exception: there's no OutSize field in their header.
+So it looks like the following:
+
+struct AUDHeaderOld
+{
+    WORD  wSampleRate;
+    DWORD dwSize;
+    BYTE  bFlags;
+    BYTE  bType;
+};
+
+bType is equal to 0x01 for WS ADPCM compressed AUDs.
+All WS ADPCM compressed sounds I've ever encountered are 8-bit.
+
+The meanings of the other fields in AUD header are the same as for C&C AUDs.
+These AUDs are divided in chunks with the chunk header being the same as for
+C&C, but those chunks have variable size (may be NOT 512 bytes) unlike C&C
+AUDs!
+
+Note that WS ADPCM compressed AUDs in C&C (death screams) have just the same
+format as other AUDs in this game, i.e. with OutSize field.
+
+====================================
+2. WS ADPCM Decompression Algorithm
+====================================
+
+Each AUD chunk may be decompressed independently of others. This lets you
+implement the seeking for WS ADPCM AUDs (unlike IMA ADPCM ones).
+But during the decompression of the given chunk a variable (CurSample) should
+be maintained for this whole chunk:
+
+SHORT CurSample;
+BYTE  InputBuffer[InputBufferSize]; // input buffer containing the whole chunk
+WORD  wSize, wOutSize; // Size and OutSize values from this chunk's header
+BYTE  code;
+CHAR  count; // this is a signed char!
+WORD  i; // index into InputBuffer
+WORD  input; // shifted input
+
+if (wSize==wOutSize) // such chunks are NOT compressed
+{
+  for (i=0;i<wOutSize;i++)
+      Output(InputBuffer[i]); // send to output stream
+  return; // chunk is done!
+}
+
+// otherwise we need to decompress chunk
+
+CurSample=0x80; // unsigned 8-bit
+i=0;
+
+// note that wOutSize value is crucial for decompression!
+
+while (wOutSize>0) // until wOutSize is exhausted!
+{
+  input=InputBuffer[i++];
+  input<<=2;
+  code=HIBYTE(input);
+  count=LOBYTE(input)>>2;
+  switch (code) // parse code
+  {
+    case 2: // no compression...
+	 if (count & 0x20)
+	 {
+	   count<<=3;		// here it's significant that (count) is signed:
+	   CurSample+=count>>3; // the sign bit will be copied by these shifts!
+
+	   Output((BYTE)CurSample);
+
+	   wOutSize--; // one byte added to output
+	 }
+	 else // copy (count+1) bytes from input to output
+	 {
+	   for (count++;count>0;count--,wOutSize--,i++)
+	       Output(InputBuffer[i]);
+	   CurSample=InputBuffer[i-1]; // set (CurSample) to the last byte sent to output
+	 }
+	 break;
+    case 1: // ADPCM 8-bit -> 4-bit
+	 for (count++;count>0;count--) // decode (count+1) bytes
+	 {
+	   code=InputBuffer[i++];
+
+	   CurSample+=WSTable4bit[(code & 0x0F)]; // lower nibble
+
+	   CurSample=Clip8BitSample(CurSample);
+	   Output((BYTE)CurSample);
+
+	   CurSample+=WSTable4bit[(code >> 4)]; // higher nibble
+
+	   CurSample=Clip8BitSample(CurSample);
+	   Output((BYTE)CurSample);
+
+	   wOutSize-=2; // two bytes added to output
+	 }
+	 break;
+    case 0: // ADPCM 8-bit -> 2-bit
+	 for (count++;count>0;count--) // decode (count+1) bytes
+	 {
+	   code=InputBuffer[i++];
+
+	   CurSample+=WSTable2bit[(code & 0x03)]; // lower 2 bits
+
+	   CurSample=Clip8BitSample(CurSample);
+	   Output((BYTE)CurSample);
+
+	   CurSample+=WSTable2bit[((code>>2) & 0x03)]; // lower middle 2 bits
+
+	   CurSample=Clip8BitSample(CurSample);
+	   Output((BYTE)CurSample);
+
+	   CurSample+=WSTable2bit[((code>>4) & 0x03)]; // higher middle 2 bits
+
+	   CurSample=Clip8BitSample(CurSample);
+	   Output((BYTE)CurSample);
+
+	   CurSample+=WSTable2bit[((code>>6) & 0x03)]; // higher 2 bits
+
+	   CurSample=Clip8BitSample(CurSample);
+	   Output((BYTE)CurSample);
+
+	   wOutSize-=4; // 4 bytes sent to output
+	 }
+	 break;
+    default: // just copy (CurSample) (count+1) times to output
+	 for (count++;count>0;count--,wOutSize--)
+	     Output((BYTE)CurSample);
+  }
+}
+
+HIBYTE and LOBYTE are just higher and lower bytes of WORD:
+#define HIBYTE(word) ((word) >> 8)
+#define LOBYTE(word) ((word) & 0xFF)
+Note that depending on your compiler you may need to use additional byte
+separation in these defines, e.g. (((byte) >> 8) & 0xFF). The same holds for
+4-bit and 2-bit nibble separation in the code above.
+
+WSTable4bit and WSTable2bit are the delta tables given in the next section.
+
+Output() is just a placeholder for any action you would like to perform for
+decompressed sample value.
+
+Clip8BitSample is quite evident:
+
+SHORT Clip8BitSample(SHORT sample)
+{
+  if (sample>255)
+     return 255;
+  else if (sample<0)
+     return 0;
+  else
+     return sample;
+}
+
+This algorithm is ONLY for mono 8-bit unsigned sound, as I've never seen any
+other sound format used with WS ADPCM compression.
+
+Of course, the decompression routine described above may be greatly
+optimized.
+
+===================
+3. WS ADPCM Tables
+===================
+
+CHAR WSTable2bit[]=
+{
+    -2,
+    -1,
+     0,
+     1
+};
+
+CHAR WSTable4bit[]=
+{
+    -9, -8, -6, -5, -4, -3, -2, -1,
+     0,  1,  2,  3,  4,  5,  6,  8
+};
+
+=====================================================
+4. AUDs in Legend Of Kyrandia III: Malcolm's Revenge
+=====================================================
+
+The WS ADPCM compression described above is used for all audio in this game:
+
+Music is stand-alone .AUD files.
+Speech is AUDs in .TLK resource files.
+Sounds are AUDs in .PAK resource files.
+
+These .TLKs and .PAKs do not use any compression or encryption for AUDs, so
+AUDs are stored "as is" in them. If you want to extract/play an AUD from
+PAK or TLK you just need to search the PAK or TLK for the AUD id, that is,
+DWORD value equal to 0x0000DEAF (or, in other words, string "\xAF\xDE\0\0").
+Refer to Vladan Bato's AUD3.TXT for more details on AUD file structure.
+
+=========================
+5. VQA Movie Soundtracks
+=========================
+
+Soundtrack of VQA movie in Malcolm, C&C, Red Alert and C&C: Tiberian Sun is
+stored in SND0, SND1 or SND2 blocks. Refer to VQA_FRMT.TXT by Aaron Glover for
+details on the structure of VQA files. Here I only describe the contents of
+VQA sound blocks and VQHD (header) block.
+
+VQHD block contains header for VQA. To the best of my knowledge, it has the
+following format:
+
+struct VQAHeader
+{
+    WORD  wVersion;
+    WORD  unknown1;
+    WORD  wNumFrames;
+    WORD  wWidth;
+    WORD  wHeight;
+    WORD  unknown2;
+    WORD  unknown3;
+    WORD  unknown4;
+    WORD  unknown5;
+    DWORD unknown6;
+    WORD  unknown7;
+    WORD  wSampleRate;
+    BYTE  bChannels;
+    BYTE  bResolution;
+    char  unknown8[14];
+};
+
+wVersion -- version of VQA: 1 -- oldest Malcolm's VQAs, 2 -- C&C, Red Alert,
+3 -- C&C: Tiberian Sun.
+
+wNumFrames -- number of frames in VQA. Note that number of sound blocks is
+(wNumFrames+1) for VQAs of version 2 (C&C, Red Alert), and (wNumFrames) for
+versions 1 and 3. But Dune2000 VQAs have also (wNumFrames) sound blocks
+while they're version 2 VQAs.
+
+wSampleRate -- sample rate for soundtrack. Note that version 1 (Malcolm's)
+VQAs may have this value set to 0x0000! Use 22050 Hz in such cases.
+
+bChannels -- number of channels (1 -- mono, 2 -- stereo). Note that version 1
+VQAs may have this set to 0x00, so use 1 (mono) for such files.
+
+bResolution -- resolution of soundtrack (0x10 -- 16-bit, 0x8 -- 8-bit). Note
+that version 1 VQAs may have this set to 0x00, so use 0x8 for such files.
+
+All VQAs in Malcolm have their sound in either SND0 or SND1 blocks.
+SND0 blocks contain non-compressed PCM data.
+SND1 blocks contain small header and WS ADPCM compressed sound data.
+The header is the following:
+
+struct SND1Header
+{
+  WORD wOutSize;
+  WORD wSize;
+};
+
+Following the header comes WS ADPCM compressed sound data.
+Each SND1 sound block may be decompressed, just like a chunk of AUD file,
+independently of the others and the routine described above may be used for
+its decompression without any changes, provided you use wOutSize from the
+SND1Header.
+
+As to VQAs in C&C and Red Alert their sound is in the SND2 blocks and
+compressed with IMA ADPCM algorithm, described in Vladan Bato's AUD3.TXT.
+The contents of SND2 block is just compressed data, without any headers and
+those blocks should be decompressed in their turn just like chunks of IMA ADPCM
+compressed AUD file as it's described in AUD3.TXT. This holds only for mono
+soundtracks.
+
+But there're also stereo soundtracks in C&C and C&C: Tiberian Sun. They have
+different left/right channel nibbles layout.
+
+For C&C (version 2) VQAs the layout is the following:
+LL RR LL RR ...
+That is, first byte contains two nibbles for two left channel values, next
+byte contains nibbles for right channel, etc. Note that lower nibble should
+be processed first and then higher one (see AUD3.TXT).
+
+For C&C: Tiberian Sun (version 3) VQAs the layout is different: in SND2 block
+first go all nibbles for left channel, then all nibbles for right channel:
+LL LL LL ... LL RR RR RR ... RR
+Note that nibbles should be processed in the same turn: lower nibble first.
+So, when decoding SND2 block, just decompress first half of the block data
+for left channel, then second half -- for right channel.
+
+===========
+6. Credits
+===========
+
+Vladan Bato (bat22@geocities.com)
+http://www.geocities.com/SiliconValley/8682
+Sent me docs on IMA ADPCM AUDs and VQAs.
+
+Alexey Schepetilnikov (a.shepetilnikov@globalone.ru)
+http://www.fortunecity.com/campus/electrical/81/
+Inspired me to work out WS ADPCM decompression scheme.
+
+-------------------------------------------
+
+Valery V. Anisimovsky (samael@avn.mccme.ru)
+http://bim.km.ru/gap/
+http://www.anxsoft.newmail.ru
+http://anx.da.ru
+On these sites you can find my GAP program which can search for AUD audio
+files in .MIX/.TLK/.PAK resources and .VQA soundtracks, extract them, convert
+them to WAV and play them back.
+There's also complete source code of GAP and all its plug-ins there,
+including AUD plug-in, which could be used for further details on how you
+can deal with this format.
