@@ -47,7 +47,7 @@ namespace CCEngine.Rendering
 			var g = Game.Instance;
 			return g.LoadAsset<Shader>(filename, true, new ShaderParameters
 			{
-				type = ShaderType.VertexShader
+				type = type
 			});
 		}
 
@@ -83,13 +83,15 @@ namespace CCEngine.Rendering
 		private BatchType activeBatch = BatchType.None;
 		private Stack<Texture> paletteStack = new Stack<Texture>();
 		private Texture activePalette = null;
-		private FrameBuffer frameBuffer;
+		private FrameBuffer[] frameBuffers;
 		private FrameBuffer screenBuffer;
+		private int activeFramebuffer;
 		private VertexArrayObject ppVao;
 		private BufferObject<byte> ppEbo;
 		private BufferObject<float> vboQuadPosition;
 		private BufferObject<float> vboQuadTexcoord;
 		private ShaderProgram blit;
+		private ShaderProgram gray;
 		private Display display;
 
 		/// Constructor.
@@ -118,11 +120,15 @@ namespace CCEngine.Rendering
 			ppVao.Unbind();
 			ppEbo = new BufferObject<byte>(quad_ix, BufferTarget.ElementArrayBuffer);
 
-			this.frameBuffer = new FrameBuffer(display.Resolution, PixelFormat.Rgba);
+			frameBuffers = new FrameBuffer[2];
+			frameBuffers[0] = new FrameBuffer(display.Resolution, PixelFormat.Rgba);
+			frameBuffers[1] = new FrameBuffer(display.Resolution, PixelFormat.Rgba);
+			activeFramebuffer = 0;
 
 			this.screenBuffer = new FrameBuffer(display.Viewport);
 
 			this.blit = LoadShaderProgram("blit.v.glsl", "blit.f.glsl");
+			this.gray = LoadShaderProgram("blit.v.glsl", "gray.f.glsl");
 
 			screenBuffer.SetViewport();
 		}
@@ -154,6 +160,7 @@ namespace CCEngine.Rendering
 
 		public void Begin()
 		{
+			var frameBuffer = frameBuffers[activeFramebuffer];
 			frameBuffer.Bind();
 			frameBuffer.SetViewport();
 			GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -163,12 +170,13 @@ namespace CCEngine.Rendering
 		public void End()
 		{
 			Flush();
-			Blit(frameBuffer, screenBuffer);
+			FlipToScreen();
 		}
 
 		/// Send the render queue to the GPU.
 		public void Flush()
 		{
+			var frameBuffer = frameBuffers[activeFramebuffer];
 			switch(activeBatch)
 			{
 				case BatchType.Sprite:
@@ -194,23 +202,46 @@ namespace CCEngine.Rendering
 		{
 			dst.SetViewport();
 			dst.Bind();
+
 			GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 			GL.ActiveTexture(TextureUnit.Texture0);
 			src.ColorAttachment.Bind();
 
-			blit.Bind();
-			GL.Uniform1(blit["source"], 0);
-
 			ppVao.Bind();
 			ppEbo.Bind();
 			GL.DrawElements(BeginMode.Triangles, 6, DrawElementsType.UnsignedByte, 0);
 			ppEbo.Unbind();
 			ppVao.Unbind();
-			blit.Unbind();
 			src.ColorAttachment.Unbind();
-			dst.Unbind();
+		}
+
+		private void FlipBuffers()
+		{
+			var src = frameBuffers[activeFramebuffer];
+			var dst = frameBuffers[1 - activeFramebuffer];
+			Blit(src, dst);
+			activeFramebuffer = 1 - activeFramebuffer;
+		}
+
+		private void FlipToScreen()
+		{
+			var src = frameBuffers[activeFramebuffer];
+			var dst = screenBuffer;
+			blit.Bind();
+			GL.Uniform1(blit["source"], 0);
+			Blit(src, dst);
+			blit.Unbind();
+		}
+
+		/// Apply a fullscreen grayscale effect.
+		public void GrayscaleEffect()
+		{
+			gray.Bind();
+			GL.Uniform1(gray["source"], 0);
+			FlipBuffers();
+			gray.Unbind();
 		}
 
 		/// Draw a rectangle.
