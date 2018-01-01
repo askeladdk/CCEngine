@@ -194,7 +194,7 @@ namespace CCEngine.Rendering
 		{
 			dst.SetViewport();
 			dst.Bind();
-			GL.ClearColor(0.0f, 0.0f, 1.0f, 0.0f);
+			GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 			GL.ActiveTexture(TextureUnit.Texture0);
