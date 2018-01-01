@@ -42,19 +42,21 @@ namespace CCEngine.Rendering
 			return Matrix4.Mult(Matrix4.Mult(scale, rotate), translate);
 		}
 
+		private static Shader LoadShader(string filename, ShaderType type)
+		{
+			var g = Game.Instance;
+			return g.LoadAsset<Shader>(filename, true, new ShaderParameters
+			{
+				type = ShaderType.VertexShader
+			});
+		}
+
 		/// Load a shader program.
 		private static ShaderProgram LoadShaderProgram(string vertfile, string fragfile)
 		{
 			var g = Game.Instance;
-			var vert = g.LoadAsset<Shader>(vertfile, true, new ShaderParameters
-			{
-				type = ShaderType.VertexShader
-			});
-
-			var frag = g.LoadAsset<Shader>(fragfile, true, new ShaderParameters
-			{
-				type = ShaderType.FragmentShader
-			});
+			var vert = LoadShader(vertfile, ShaderType.VertexShader);
+			var frag = LoadShader(fragfile, ShaderType.FragmentShader);
 
 			var program = new ShaderProgram(vert, frag);
 			if (!program.Link())
