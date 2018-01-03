@@ -45,6 +45,8 @@ namespace CCEngine.Logic
 						g.Camera.Pan(0, -8);
 					else if (k.Key == Key.Down)
 						g.Camera.Pan(0, 8);
+					else if(k.Key == Key.P)
+						g.PlayRandomMusic();
 					break;
 				default:
 					e.GUI.TakeInput(this, true);
@@ -94,6 +96,7 @@ namespace CCEngine.Logic
 		{
 			if (!initialized)
 				Initialize();
+			Game.Instance.PlayRandomMusic();
 		}
 
 		public void Hide()

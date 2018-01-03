@@ -10,6 +10,7 @@ using CCEngine.VFS;
 using CCEngine.Rendering;
 using CCEngine.Simulation;
 using CCEngine.Collections;
+using CCEngine.Audio;
 
 namespace CCEngine
 {
@@ -26,6 +27,7 @@ namespace CCEngine
 		private Logger logger;
 		private Logic.GameLogic logic;
 		private Renderer renderer;
+		private AudioDevice audio;
 
 		// Simulation
 		private int globalClock = 0;
@@ -66,6 +68,7 @@ namespace CCEngine
 			this.assets.RegisterLoader<Map>(new MapLoader());
 			this.assets.RegisterLoader<FntFile>(new FontLoader());
 			this.assets.RegisterLoader<BinFile>(new BinFLoader());
+			this.assets.RegisterLoader<IAudioSource>(new AudLoader());
 			//this.assets.RegisterLoader<World>(new WorldLoader());
 
 			this.logger = new Logger(this, LogLevel.Debug);
@@ -87,6 +90,8 @@ namespace CCEngine
 				res.Width - Constants.HUDSideBarWidth,
 				res.Height - Constants.HUDTopBarHeight
 			);
+
+			this.audio = new AudioDevice(16);
 		}
 
 		public void Initialise()
@@ -95,6 +100,7 @@ namespace CCEngine
 			this.InitialiseGUI();
 			this.SetRules();
 			this.LoadWorldData();
+			this.LoadMusic();
 		}
 
 		protected override void OnUpdateFrame(FrameEventArgs e)
@@ -103,6 +109,7 @@ namespace CCEngine
 			this.bus.ProcessMessages();
 			if (!this.logic.Update((float)e.Time))
 				this.Exit();
+			this.audio.Update();
 			this.gui.Flip();
 			this.globalClock++;
 
@@ -192,6 +199,7 @@ namespace CCEngine
 				g.Log(LogLevel.Info, GL.GetString(StringName.Version));
 				g.Log(LogLevel.Info, "Shader Language v{0}", GL.GetString(StringName.ShadingLanguageVersion));
 				g.Log(LogLevel.Info, "Maximum Texture Size {0}x{0}", GL.GetInteger(GetPName.MaxTextureSize));
+				g.Log(LogLevel.Info, AudioDevice.VendorString);
 
 				// Load the virtual file system.
 				var roots = config.GetString("CCEngine", "Roots").Split(',');

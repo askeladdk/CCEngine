@@ -5,6 +5,7 @@ using CCEngine.Simulation;
 using CCEngine.FileFormats;
 using CCEngine.Rendering;
 using CCEngine.ECS;
+using CCEngine.Audio;
 
 namespace CCEngine
 {
@@ -20,6 +21,8 @@ namespace CCEngine
 		private IConfiguration theaterscfg;
 		private IConfiguration artcfg;
 		private IConfiguration rulescfg;
+
+		private List<Music> music = new List<Music>();
 
 		public Theater GetTheater(string id)
 		{
@@ -224,6 +227,32 @@ namespace CCEngine
 		public void LoadWorldData()
 		{
 			ReadTheaters();
+		}
+
+		private void LoadMusic()
+		{
+			var config = this.LoadAsset<IniFile>("scores.ini", false);
+			foreach(var kv in config.Enumerate("Scores"))
+			{
+				var scoreid = kv.Value;
+				var name = config.GetString(scoreid, "Name");
+				var duration = config.GetInt(scoreid, "Duration");
+				var source = this.LoadAsset<IAudioSource>("{0}.AUD".F(scoreid), false);
+				if(source != null)
+					music.Add(new Music(name, duration, source));
+			}
+		}
+
+		public void PlayRandomMusic()
+		{
+			var rng = new Random();
+			var mus = music[rng.Next(music.Count)];
+			audio.PlayMusic(mus);
+		}
+
+		public IReadOnlyList<Music> Music
+		{
+			get => music;
 		}
 	}
 }
