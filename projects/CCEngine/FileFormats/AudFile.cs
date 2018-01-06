@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using OpenTK.Audio.OpenAL;
 using CCEngine.Codecs;
 using CCEngine.Audio;
+using CCEngine.Collections;
 
 namespace CCEngine.FileFormats
 {
@@ -33,51 +34,126 @@ namespace CCEngine.FileFormats
 			public uint magic;
 		}
 
-		public static IAudioSource ReadToBuffer(Stream s)
+		private class AudFileStream : BaseAudioStream, IAudioSource
 		{
-			var hdr = s.ReadStruct<AudHeader>();
-			var stereo = (hdr.flags & FLAG_STEREO) != 0;
-			var bits16 = (hdr.flags & FLAG_16BIT) != 0;
+			private Stream rawStream;
+			private ALFormat format;
+			private int sampleRate;
+			private int remaining;
+			private int index;
+			private short sample;
+			private RingBuffer ring;
 
-			if(!bits16)
-				throw new Exception("Not 16-bit audio");
-			if(hdr.type != TYPE_IMA_ADPCM)
-				throw new Exception("Not IMA ADPCM audio");
+			public override ALFormat Format { get => format; }
+			public override int SampleRate { get => sampleRate; }
+			public override long Length { get => remaining; }
 
-			var format = bits16
-				? (stereo ? ALFormat.Stereo16 : ALFormat.Mono16)
-				: (stereo ? ALFormat.Stereo8  : ALFormat.Mono8)
-			;
-
-			// decoding state
-			int index = 0;
-			short sample = 0;
-			// output
-			var samples = new byte[hdr.sizeOutput];
-			var stream = new MemoryStream(samples);
-			var writer = new BinaryWriter(stream);
-
-			var remaining = samples.Length;
-
-			while(remaining > 0)
+			public AudFileStream(Stream rawStream)
 			{
-				var chkhdr = s.ReadStruct<ChunkHeader>();
-				if(chkhdr.magic != CHUNK_MAGIC)
-					throw new Exception("Invalid chunk magic");
-				var src = s.ReadBytes(chkhdr.sizeCompressed);
-				ImaAdpcm.Decode(writer, src, 0, src.Length, ref index, ref sample);
-				remaining -= chkhdr.sizeUncompressed;
+				var hdr = rawStream.ReadStruct<AudHeader>();
+				var stereo = (hdr.flags & FLAG_STEREO) != 0;
+				var bits16 = (hdr.flags & FLAG_16BIT) != 0;
+
+				if(!bits16)
+					throw new Exception("Not 16-bit audio");
+				if(hdr.type != TYPE_IMA_ADPCM)
+					throw new Exception("Not IMA ADPCM audio");
+
+				this.format = bits16
+					? (stereo ? ALFormat.Stereo16 : ALFormat.Mono16)
+					: (stereo ? ALFormat.Stereo8  : ALFormat.Mono8)
+				;
+
+				this.rawStream = rawStream;
+				this.sampleRate = hdr.sampleRate;
+				this.remaining = (int)hdr.sizeOutput;
+				this.ring = new RingBuffer(4096);
 			}
 
-			return new AudioBuffer(samples, hdr.sampleRate, format);
+			private byte[] ReadNextChunk()
+			{
+				var chkhdr = this.rawStream.ReadStruct<ChunkHeader>();
+				if(chkhdr.magic != CHUNK_MAGIC)
+				{
+					remaining = 0;
+					return null;
+				}
+
+				byte[] samples = new byte[4 * chkhdr.sizeCompressed];
+				var memstream = new MemoryStream(samples);
+
+				ImaAdpcm.Decode(this.rawStream, memstream, chkhdr.sizeCompressed,
+					ref index, ref sample);
+				remaining = Math.Max(remaining - samples.Length, 0);
+				return samples;
+			}
+
+			public override int Read(byte[] output, int offset, int count)
+			{
+				var total = 0;
+				while(count > 0 && this.Length > 0)
+				{
+					if(ring.Length > 0)
+					{
+						var nread = ring.Read(output, offset, count);
+						offset += nread;
+						count -= nread;
+						total += nread;
+					}
+
+					if(count > 0)
+					{
+						var chunk = ReadNextChunk();
+						if(chunk != null)
+							ring.Write(chunk, 0, chunk.Length);
+					}
+				}
+
+				return total;
+			}
+
+			public BaseAudioStream GetStream()
+			{
+				return this;
+			}
 		}
+
+		public static IAudioSource ReadToStream(Stream s)
+		{
+			return new AudFileStream(s);
+		}
+
+		public static IAudioSource ReadToBuffer(Stream s)
+		{
+			var samples = ReadToStream(s).GetStream();
+			var buffer = new byte[samples.Length];
+			samples.CopyTo(new MemoryStream(buffer));
+			return new AudioBuffer(buffer, samples.SampleRate, samples.Format);
+		}
+	}
+
+	public enum AudFileType
+	{
+		Buffered,
+		Streamed,
 	}
 
 	public class AudLoader : IAssetLoader
 	{
 		public object Load(AssetManager assets, VFS.VFSHandle handle, object parameters)
 		{
-			return AudFile.ReadToBuffer(handle.Open());
+			var type = AudFileType.Buffered;
+			if(parameters != null)
+				type = (AudFileType)parameters;
+			switch(type)
+			{
+				case AudFileType.Buffered:
+					return AudFile.ReadToBuffer(handle.Open());
+				case AudFileType.Streamed:
+					return AudFile.ReadToStream(handle.Open());
+				default:
+					throw new ArgumentException();
+			}
 		}
 	}
 }

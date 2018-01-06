@@ -1,4 +1,5 @@
 using CCEngine.Audio;
+using CCEngine.FileFormats;
 
 namespace CCEngine.Simulation
 {
@@ -6,22 +7,24 @@ namespace CCEngine.Simulation
 	{
 		private string name;
 		private int duration;
-		private IAudioSource source;
+		private string scoreid;
 
 		public string Name { get => name; }
 
 		public int Duration { get => duration; }
 
-		public Music(string name, int duration, IAudioSource source)
+		public Music(string name, int duration, string scoreid)
 		{
 			this.name = name;
 			this.duration = duration;
-			this.source = source;
+			this.scoreid = scoreid;
 		}
 
-		public IAudioStream GetStream()
+		public BaseAudioStream GetStream()
 		{
-			return source.GetStream();
+			var source = Game.Instance.LoadAsset<IAudioSource>("{0}.AUD".F(scoreid),
+				false, AudFileType.Streamed);
+			return source?.GetStream();
 		}
 	}
 }

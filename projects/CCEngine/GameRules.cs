@@ -237,9 +237,7 @@ namespace CCEngine
 				var scoreid = kv.Value;
 				var name = config.GetString(scoreid, "Name");
 				var duration = config.GetInt(scoreid, "Duration");
-				var source = this.LoadAsset<IAudioSource>("{0}.AUD".F(scoreid), false);
-				if(source != null)
-					music.Add(new Music(name, duration, source));
+				music.Add(new Music(name, duration, scoreid));
 			}
 		}
 

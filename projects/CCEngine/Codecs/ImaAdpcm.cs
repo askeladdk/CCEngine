@@ -38,14 +38,13 @@ namespace CCEngine.Codecs
 		}
 
 		/// Decode an AUD chunk to IMA ADPCM 16-bit audio samples.
-		public static void Decode(BinaryWriter wr, byte[] src, int srcpos, int srclen,
-			ref int index, ref short sample)
+		public static void Decode(Stream input, Stream output, int count, ref int index, ref short sample)
 		{
-			for(; srcpos < srclen; srcpos++)
+			var writer = new BinaryWriter(output);
+			foreach(var b in input.ReadBytes(count))
 			{
-				var b = src[srcpos];
-				wr.Write(DecodeSample(b, ref index, ref sample));
-				wr.Write(DecodeSample((byte)(b >> 4), ref index, ref sample));
+				writer.Write(DecodeSample(b, ref index, ref sample));
+				writer.Write(DecodeSample((byte)(b >> 4), ref index, ref sample));
 			}
 		}
 	}

@@ -96,7 +96,6 @@ namespace CCEngine.Logic
 		{
 			if (!initialized)
 				Initialize();
-			Game.Instance.PlayRandomMusic();
 		}
 
 		public void Hide()

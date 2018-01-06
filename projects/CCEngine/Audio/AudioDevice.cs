@@ -5,122 +5,20 @@ using OpenTK.Audio.OpenAL;
 
 namespace CCEngine.Audio
 {
-	internal class AudioVoice : Resource
-	{
-		private byte[] samples;
-		private int source;
-		private int[] buffers;
-		private IAudioStream stream;
-		private int priority;
-
-		public AudioVoice()
-		{
-			this.samples = new byte[2048];
-			this.source = AL.GenSource();
-			this.buffers = AL.GenBuffers(3);
-		}
-
-		~AudioVoice()
-		{
-			Dispose(false);
-		}
-
-		protected override bool Cleanup(bool dispose_unmanaged_objects)
-		{
-			if(dispose_unmanaged_objects)
-			{
-				Stop();
-				AL.DeleteBuffers(buffers);
-				AL.DeleteSource(source);
-				return true;
-			}
-
-			return false;
-		}
-
-		public int Priority { get => priority; }
-
-		public bool IsPlaying
-		{
-			get => AL.GetSourceState(source) == ALSourceState.Playing;
-		}
-
-		private int BuffersProcessed()
-		{
-			var nprocessed = 0;
-			AL.GetSource(source, ALGetSourcei.BuffersProcessed, out nprocessed);
-			return nprocessed;
-		}
-
-		private void Buffer(int buffer, IAudioStream stream)
-		{
-			var len = stream.ReadSamples(samples);
-			if(len > 0)
-				AL.BufferData(buffer, stream.Format, samples, len, stream.SampleRate);
-		}
-
-		public void Stop()
-		{
-			AL.SourceStop(source);
-			var nprocessed = BuffersProcessed();
-			if(nprocessed > 0)
-				AL.SourceUnqueueBuffers(source, nprocessed);
-			this.stream = null;
-		}
-
-		public void Play(IAudioStream stream, int priority)
-		{
-			Stop();
-			for(var i = 0; i < buffers.Length; i++)
-				Buffer(buffers[i], stream);
-			AL.SourceQueueBuffers(source, buffers.Length, buffers);
-
-			if(!IsPlaying)
-				AL.SourcePlay(source);
-			this.stream = stream;
-			this.priority = priority;
-		}
-
-		public bool Update()
-		{
-			if(stream == null)
-				return false;
-
-			if(stream.Empty)
-			{
-				Stop();
-				return true;
-			}
-
-			var nprocessed = BuffersProcessed();
-
-			while(nprocessed-- > 0)
-			{
-				var buffer = AL.SourceUnqueueBuffer(source);
-				Buffer(buffer, stream);
-				AL.SourceQueueBuffer(source, buffer);
-			}
-
-			if(!IsPlaying)
-				AL.SourcePlay(source);
-			return false;
-		}
-	}
-
-	public class AudioDevice : Resource
+	public partial class AudioDevice : Resource
 	{
 		public event Action MusicFinished;
 
 		private AudioContext context;
-		private AudioVoice[] voices;
+		private Voice[] voices;
 
 		public AudioDevice(int nvoices)
 		{
 			context = new AudioContext();
 			context.MakeCurrent();
-			voices = new AudioVoice[nvoices];
+			voices = new Voice[nvoices];
 			for(var i = 0; i < voices.Length; i++)
-				voices[i] = new AudioVoice();
+				voices[i] = new Voice();
 		}
 
 		~AudioDevice()
@@ -151,7 +49,7 @@ namespace CCEngine.Audio
 
 		public void Play(IAudioSource sound, int priority)
 		{
-			AudioVoice voice = null;
+			Voice voice = null;
 			for(var i = 1; i < voices.Length; i++)
 				if(!voices[i].IsPlaying)
 					voice = voices[i];
@@ -172,7 +70,7 @@ namespace CCEngine.Audio
 		public void Update()
 		{
 			if(voices[0].Update())
-				MusicFinished.Invoke();
+				MusicFinished?.Invoke();
 			for(var i = 1; i < voices.Length; i++)
 				voices[i].Update();
 		}

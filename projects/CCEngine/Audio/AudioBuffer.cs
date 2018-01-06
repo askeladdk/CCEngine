@@ -5,29 +5,29 @@ namespace CCEngine.Audio
 {
 	public class AudioBuffer : IAudioSource
 	{
-		private class AudioBufferStream : IAudioStream
+		private class AudioBufferStream : BaseAudioStream
 		{
 			private AudioBuffer buffer;
-			private int offset;
+			private int samplesOffset;
 
-			public int SampleRate { get => buffer.sampleRate; }
-			public ALFormat Format { get => buffer.format; }
-			public bool Empty { get => (buffer.samples.Length - offset) == 0; }
+			public override int SampleRate { get => buffer.sampleRate; }
+			public override ALFormat Format { get => buffer.format; }
+
+			public override long Length { get => buffer.samples.Length - samplesOffset; }
 
 			public AudioBufferStream(AudioBuffer buffer)
 			{
 				this.buffer = buffer;
-				this.offset = 0;
+				this.samplesOffset = 0;
 			}
 
-			public int ReadSamples(byte[] samples)
+			public override int Read(byte[] output, int offset, int count)
 			{
-				var nsamples = samples.Length;
-				if(offset + nsamples > buffer.samples.Length)
-					nsamples = buffer.samples.Length - offset;
-				buffer.ReadSamples(samples, 0, offset, nsamples);
-				offset += nsamples;
-				return nsamples;
+				if(samplesOffset + count > buffer.samples.Length)
+					count = buffer.samples.Length - samplesOffset;
+				Buffer.BlockCopy(buffer.samples, samplesOffset, output, offset, count);
+				samplesOffset += count;
+				return count;
 			}
 		}
 
@@ -42,12 +42,7 @@ namespace CCEngine.Audio
 			this.format = format;
 		}
 
-		public void ReadSamples(byte[] dst, int dstpos, int srcpos, int count)
-		{
-			Array.Copy(samples, srcpos, dst, dstpos, count);
-		}
-
-		public IAudioStream GetStream()
+		public BaseAudioStream GetStream()
 		{
 			return new AudioBufferStream(this);
 		}
