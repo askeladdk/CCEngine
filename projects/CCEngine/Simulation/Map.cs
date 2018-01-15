@@ -1,324 +1,148 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Drawing;
-using System.Linq;
-using System.IO;
-using CCEngine.Codecs;
-using CCEngine.FileFormats;
-using CCEngine.Collections;
-using CCEngine.Rendering;
-using CCEngine.ECS;
+using System.Collections.Generic;
+using OpenTK.Graphics;
 using CCEngine.Algorithms;
-using OpenTK.Graphics.OpenGL;
+using CCEngine.FileFormats;
+using CCEngine.Rendering;
 
 namespace CCEngine.Simulation
 {
 	public class Map : IGrid<MovementZone>
 	{
-		private readonly MapCell[] cells;
-		private readonly Rectangle bounds;
-		private readonly Theater theater;
-		private Registry registry;
-		private PRadioReceiver radiorec;
+		private ObjectStore objectStore;
+		private Rectangle bounds;
+		private Theater theater;
+		private CPos highlight;
 
-		public CPos cellHighlight = new CPos(0);
+		// map layers
+		// 0 land
+		// 1 overlays
+		// 2 smudges
+		// 3 structuregrids
+		// 4 mobile units+infantry
+		// 5 influence map
 
-		public Registry Registry { get { return registry; } }
-		public Rectangle Bounds { get { return bounds; } }
-		public Theater Theater { get { return theater; } }
+		private LayerLand land = new LayerLand();
+		private LayerOverlay overlay = new LayerOverlay();
+		private LayerGrid grid = new LayerGrid();
 
-		private Map(IConfiguration cfg)
+		public Rectangle Bounds { get => bounds; }
+		public Theater Theater { get => theater; }
+
+		public CPos Highlight
 		{
-			this.registry = CreateRegistry();
-			var theaterid = cfg.GetString("Map", "Theater");
-			this.theater = Game.Instance.GetTheater(theaterid);
-			this.bounds = ReadBounds(cfg);
-			this.cells = ReadTiles(cfg);
-			SpawnTerrains(cfg);
-			SpawnUnits(cfg);
+			get => highlight;
+			set => highlight = value;
 		}
 
-		private Rectangle ReadBounds(IConfiguration cfg)
+		public Map(ObjectStore objectStore)
 		{
-			int mapx = cfg.GetInt("Map", "X");
-			int mapy = cfg.GetInt("Map", "Y");
-			int mapw = cfg.GetInt("Map", "Width");
-			int maph = cfg.GetInt("Map", "Height");
-			return new Rectangle(mapx, mapy, mapw, maph);
+			this.objectStore = objectStore;
 		}
 
-		/// <summary>
-		/// Create registry and attach processors.
-		/// </summary>
-		/// <returns></returns>
-		private Registry CreateRegistry()
+		public void Load(Scenario scenario)
 		{
-			var registry = new Registry();
-			PAnimation.Attach(registry);
-			PRender.Attach(registry);
-			//PLocomotion.Attach(registry);
-			radiorec = PRadioReceiver.Attach(registry);
-			PRadio.Attach(registry);
-			return registry;
+			bounds = scenario.Bounds;
+			theater = scenario.Theater;
+			land.Load(scenario);
+			overlay.Load(scenario);
+			grid.Clear();
 		}
 
-		public MapCell GetCell(int cellId)
+		public void Clear()
 		{
-			return cells[cellId];
+			land.Clear();
+			overlay.Clear();
+			grid.Clear();
 		}
 
-		public MapCell GetCell(CPos cpos)
+		public LandType GetLandType(CPos cell)
 		{
-			return cells[cpos.CellId];
-		}
-
-		public bool IsCellPassable(MovementZone mz, CPos cpos)
-		{
-			return this.GetCell(cpos).IsPassable(mz);
-		}
-
-		public void Update(float dt)
-		{
-			this.registry.Update(dt);
-		}
-
-		private bool TryPlace(int entityId)
-		{
-			CPlacement placement;
-			if(!this.registry.TryGetComponent<CPlacement>(entityId, out placement))
-				return false;
-
-			var pose = this.registry.GetComponent<CLocomotion>(entityId);
-			var center = pose.Position.CellId;
-
-			var occupy = placement.OccupyGrid;
-			for (int i = 0; i < occupy.Length; i++)
+			switch(overlay[cell].Type)
 			{
-				var tile = this.GetCell(center + occupy[i]);
-				tile.OccupyEntityId = entityId;
+				case OverlayType.Obstacle:
+					return LandType.Rock;
+				case OverlayType.Wall:
+					return LandType.Wall;
+				case OverlayType.ResourceCommon:
+				case OverlayType.ResourcePrecious:
+					return LandType.Resource;
+				default:
+					return land[cell].LandType;
 			}
+		}
 
+		public (TmpFile template, int index) GetTemplate(CPos cell)
+		{
+			var x = land[cell];
+			return (theater.GetTemplate(x.TemplateID), (int)x.TemplateIndex);
+		}
+
+		public bool CanPlace(StructureGrid grid, CPos cell)
+		{
+			var cellid = cell.CellId;
+			for (int i = 0; i < grid.Length; i++)
+			{
+				var cpos = new CPos((ushort)(cellid + grid[i]));
+				var landtype = GetLandType(cpos);
+				var land = objectStore.GetLand(landtype);
+				if(!land.IsBuildable || !this.grid[cpos].IsPassable)
+					return false;
+			}
 			return true;
 		}
 
-		public IEnumerable<CPos> GetPath(CPos start, CPos goal)
+		public void Place(StructureGrid grid, CPos cell, int entityId)
 		{
-			return PathFinding.AStar<MovementZone>(this, start, goal, MovementZone.Track);
+			this.grid.Place(grid, cell, entityId);
 		}
 
-		#region IGrid
 
-		private static Tuple<int, int, int>[] cellOffsets =
+		public bool IsPassable(CPos cell, MovementZone mz)
 		{
-			// dx, dy, cost
-			Tuple.Create( 0, -1, 10),
-			Tuple.Create( 1, -1, 14),
-			Tuple.Create( 1,  0, 10),
-			Tuple.Create( 1,  1, 14),
-			Tuple.Create( 0,  1, 10),
-			Tuple.Create(-1,  1, 14),
-			Tuple.Create(-1,  0, 10),
-			Tuple.Create(-1, -1, 14),
+			var land = objectStore.GetLand(GetLandType(cell));
+			return land.IsPassable(mz) && grid[cell].IsPassable;
+		}
+
+		private static (int dx, int dy, int cost)[] cellOffsets =
+		{
+			( 0, -1, 10),
+			( 1, -1, 14),
+			( 1,  0, 10),
+			( 1,  1, 14),
+			( 0,  1, 10),
+			(-1,  1, 14),
+			(-1,  0, 10),
+			(-1, -1, 14),
 		};
 
-		Land IGrid<MovementZone>.GetLandAt(CPos cpos)
+		IEnumerable<(CPos, int)> IGrid<MovementZone>.GetPassableNeighbors(MovementZone mz, CPos cpos)
 		{
-			return GetCell(cpos).Land;
-		}
-
-		IEnumerable<Tuple<CPos, int>> IGrid<MovementZone>.GetPassableNeighbors(MovementZone mz, CPos cpos)
-		{
-			foreach(var co in cellOffsets)
+			foreach(var offset in cellOffsets)
 			{
-				var neighbor = cpos.Translate(co.Item1, co.Item2);
-				if (bounds.Contains(neighbor) && IsCellPassable(mz, neighbor))
-					yield return Tuple.Create(neighbor, co.Item3);
-			}
-		}
-		#endregion
-
-		#region Map Loading
-
-		private void UnpackSection(IConfiguration cfg, string section, byte[] buffer, int ofs, int len)
-		{
-			if (!cfg.Contains(section))
-				throw new Exception("[{0}] missing".F(section));
-			var sb = string.Join(string.Empty, cfg.Enumerate(section).Select(x => x.Value));
-			var bin = Convert.FromBase64String(sb);
-
-			using (var br = new BinaryReader(new MemoryStream(bin)))
-			{
-				int max = ofs + len;
-				while (ofs < max)
-				{
-					int cmpsz = br.ReadUInt16(); // compressed size
-					int ucmpsz = br.ReadUInt16(); // uncompressed size
-					var chunk = br.ReadBytes(cmpsz);
-					Format80.Decode(chunk, 0, buffer, ofs, cmpsz);
-					ofs += ucmpsz;
-				}
+				var neighbor = cpos.Translate(offset.dx, offset.dy);
+				if (bounds.Contains(neighbor) && IsPassable(neighbor, mz))
+					yield return (neighbor, offset.cost);
 			}
 		}
 
-		private MapCell[] ReadTiles(IConfiguration cfg)
+		Land IGrid<MovementZone>.GetLandAt(CPos cell)
 		{
-			var theater = this.theater;
-			byte[] mapdata = new byte[4 * Constants.MapCellCount];
-
-			UnpackSection(cfg, "MapPack", mapdata, 0, 3 * Constants.MapCellCount);
-			UnpackSection(cfg, "OverlayPack", mapdata, 3 * Constants.MapCellCount, Constants.MapCellCount);
-
-			var rng = new Random(0);
-			var cells = new MapCell[Constants.MapCellCount];
-
-			for (int i = 0; i < cells.Length; i++)
-			{
-				int x = i % Constants.MapSize;
-				int y = i / Constants.MapSize;
-				byte tmpid0  = mapdata[2 * i + 0];
-				byte tmpid1  = mapdata[2 * i + 1];
-				ushort tmpid = (ushort)(tmpid1 << 8 | tmpid0);
-				byte tmpidx  = mapdata[2 * Constants.MapCellCount + i];
-				//byte ovridx  = mapdata[3 * Constants.MapCells + i];
-				var tmp = theater.GetTemplate(tmpid);
-				// Replace invalid tiles with the clear tile.
-				if (tmpid == 0 || tmpid == 65535 || tmp == null || tmpidx >= tmp.FrameCount)
-				{
-					tmpid = 255;
-					tmp = theater.GetTemplate(tmpid);
-				}
-				if (tmpid == 255)
-					tmpidx = (byte)rng.Next(tmp.FrameCount);
-				var type = tmp.GetLandType(tmpidx);
-				var land = Game.Instance.GetLand(type);
-				cells[i] = new MapCell(tmpid, tmpidx, land);
-			}
-
-			return cells;
+			return objectStore.GetLand(GetLandType(cell));
 		}
 
-		private void SpawnTerrains(IConfiguration cfg)
+		public void Render(RenderArgs args)
 		{
-			// [TERRAINS]
-			// cell=terrainId
-			foreach(var kv in cfg.Enumerate("TERRAIN"))
-			{
-				var cell = ushort.Parse(kv.Key);
-				var trnId = kv.Value;
-
-				var bp = Game.Instance.GetTerrainType(trnId, this.theater);
-
-				if(bp != null)
-				{
-					var attrs = new AttributeTable
-					{
-						{"Locomotion.Position", new XPos(cell)},
-					};
-					//var entityId = this.registry.Spawn(bp, attrs);
-					//this.TryPlace(entityId);
-					Game.Instance.SendMessage(new MsgSpawnEntity(trnId, TechnoType.Terrain, attrs));
-				}
-			}
+			land.Render(this, args);
+			args.renderer.Flush();
+			overlay.Render(this, args);
+			args.renderer.Flush();
 		}
 
-		private void SpawnUnits(IConfiguration cfg)
+		public void Update()
 		{
-			// [UNITS]
-			// num=country,type,health,cell,facing,action,trig
-			if (!cfg.Contains("UNITS"))
-				return;
-			foreach (var kv in cfg.Enumerate("UNITS"))
-			{
-				var data = kv.Value.Split(',');
-				if (data.Length < 7)
-					continue;
-				var technoId = data[1];
-				var cell = ushort.Parse(data[3]);
-				var facing = int.Parse(data[4]);
-				var bp = Game.Instance.GetUnitType(technoId);
-				if(bp != null)
-				{
-					var attrs = new AttributeTable
-					{
-						{"Locomotion.Position", new XPos(cell)},
-						{"Locomotion.Facing", new BinaryAngle(facing)},
-					};
-					//Game.Instance.Log(Logger.DEBUG, "Spawn {0}\n{1}", technoId, attrs);
-					//this.registry.Spawn(bp, attrs);
-					Game.Instance.SendMessage(new MsgSpawnEntity(technoId, TechnoType.Vehicle, attrs));
-				}
-			}
-		}
-
-		public void HandleMessage(IMessage msg)
-		{
-			MsgSpawnEntity spawn;
-
-			if(msg.Is<MsgSpawnEntity>(out spawn))
-			{
-				this.SpawnEntity(spawn.ID, spawn.TechnoType, spawn.Table);
-			}
-
-			this.radiorec.OnMessage(msg);
-		}
-
-		private void SpawnEntity(string id, TechnoType type, IAttributeTable table)
-		{
-			var g = Game.Instance;
-			int eid = 0;
-			Blueprint bp;
-
-			switch(type)
-			{
-				case TechnoType.Vehicle:
-					bp = g.GetUnitType(id);
-					eid = Registry.Spawn(bp, table);
-					break;
-				case TechnoType.Terrain:
-					bp = g.GetTerrainType(id, this.theater);
-					eid = Registry.Spawn(bp, table);
-					this.TryPlace(eid);
-					break;
-				default:
-					throw new Exception("Not implemented");
-			}
-
-			g.Log("Spawned {0} ({1})\n{2}", id, eid, table);
-		}
-
-		public static Map Read(Stream stream, AssetManager assets)
-		{
-			var cfg = IniFile.Read(stream);
-			return new Map(cfg);
-#if false
-			// Read Map section.
-			int mapx = cfg.GetInt("Map", "X");
-			int mapy = cfg.GetInt("Map", "Y");
-			int mapw = cfg.GetInt("Map", "Width");
-			int maph = cfg.GetInt("Map", "Height");
-			Rectangle bounds = new Rectangle(mapx, mapy, mapw, maph);
-
-			var theater_name = cfg.GetString("Map", "Theater");
-			var theater = w.GetTheater(theater_name);
-			if (theater == null)
-				throw new Exception("Invalid theater {0}".F(theater_name));
-
-			var tiles = ReadTiles(cfg, theater);
-			var terrains = ReadTerrains(w, cfg, theater);
-
-			return new Map(tiles, bounds, theater, terrains);
-#endif
-			}
-
-		#endregion
-	}
-
-	public class MapLoader : IAssetLoader
-	{
-		public object Load(AssetManager assets, VFS.VFSHandle handle, object parameters)
-		{
-			using(var stream = handle.Open())
-				return Map.Read(stream, assets);
+			overlay.Update(bounds);
 		}
 	}
 }

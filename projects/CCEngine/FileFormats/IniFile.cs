@@ -37,7 +37,7 @@ namespace CCEngine.FileFormats
 			IniDict sec;
 			return sections.TryGetValue(section, out sec)
 				? sec
-				: null;
+				: Enumerable.Empty<KeyValuePair<string, string>>();
 		}
 
 		public override string GetString(string section, string key, string otherwise = null)
@@ -49,6 +49,11 @@ namespace CCEngine.FileFormats
 				return sec.TryGetValue(key, out value) ? value : otherwise;
 			}
 			return null;
+		}
+
+		public override IEnumerable<string> EnumerateSections()
+		{
+			return this.sections.Keys;
 		}
 
 		public static IniFile Read(Stream stream)

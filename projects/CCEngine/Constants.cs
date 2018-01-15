@@ -4,24 +4,31 @@ namespace CCEngine
 {
 	public class Constants
 	{
-		// Updates per second.
+		/// Updates per second.
 		public const int FrameRate = 15;
 
-		// Map width/height in cells.
+		/// Map width and height in cells.
 		public const int MapSize = 128;
 		
-		// Total number of cells in map.
+		/// Total number of cells in the map.
 		public const int MapCellCount = MapSize * MapSize;
 	
-		// Map tile width and height in pixels.
+		/// Map tile width and height in pixels.
 		public const int TileSize = 24;
+
+		/// Half the map tile width and height in pixels.
 		public const int TileSizeHalf = TileSize / 2;
 
-		// Number of house color remaps in palette.cps.
+		/// Maximum number of houses.
+		public const int MaxHouses = 32;
+
+		/// Number of house color remaps in palette.cps.
 		public const int HouseColors = 8;
 
-		// HUD constants.
+		/// Height of the HUD top bar in pixels.
 		public const int HUDTopBarHeight = 16;
+
+		/// Width of the HUD sidebar in pixels.
 		public const int HUDSideBarWidth = 160;
 	}
 }

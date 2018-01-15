@@ -39,10 +39,11 @@ namespace CCEngine.Simulation
 	}
 
 
-	class RenderArgs
+	public class RenderArgs
 	{
 		public float alpha;
-		public Rectangle objectBounds;
+		public RenderBounds bounds;
+		public Renderer renderer;
 	}
 
 	class PRender : SingleProcessor
@@ -65,10 +66,10 @@ namespace CCEngine.Simulation
 		protected override void Process(object e, int entityId)
 		{
 			var g = Game.Instance;
-			var renderer = g.Renderer;
 			var camera = g.Camera;
 			var args = e as RenderArgs;
-			var objectBounds = args.objectBounds;
+			var renderer = args.renderer;
+			var objectBounds = args.bounds.ObjectBounds;
 
 			var loco = Registry.GetComponent<CLocomotion>(entityId);
 			var anim = Registry.GetComponent<CAnimation>(entityId);

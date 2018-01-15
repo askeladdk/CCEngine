@@ -16,6 +16,7 @@ namespace CCEngine
 		string[] GetStringArray(string section, string key);
 		int[] GetIntArray(string section, string key, int nentries);
 		IEnumerable<KeyValuePair<string, string>> Enumerate(string section);
+		IEnumerable<string> EnumerateSections();
 	}
 
 	public abstract class AbstractConfiguration : IConfiguration
@@ -24,6 +25,7 @@ namespace CCEngine
 		public abstract bool Contains(string section, string key);
 		public abstract string GetString(string section, string key, string otherwise = null);
 		public abstract IEnumerable<KeyValuePair<string, string>> Enumerate(string section);
+		public abstract IEnumerable<string> EnumerateSections();
 
 		public int GetInt(string section, string key, int otherwise = 0)
 		{
@@ -114,6 +116,16 @@ namespace CCEngine
 			return configs
 				.Select(x => x.Enumerate(section))
 				.Aggregate((a, b) => a.Union(b));
+		}
+
+		public override IEnumerable<string> EnumerateSections()
+		{
+			var uniques = new HashSet<string>();
+			foreach(var table in configs)
+				foreach(var section in table.EnumerateSections())
+					uniques.Add(section);
+			foreach(var section in uniques)
+				yield return section;
 		}
 	}
 }

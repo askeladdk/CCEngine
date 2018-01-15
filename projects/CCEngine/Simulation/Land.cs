@@ -3,10 +3,8 @@ using System.Collections.Generic;
 
 namespace CCEngine.Simulation
 {
-	/// <summary>
 	/// Land type specifies what kind of land a tile is.
-	/// </summary>
-	public enum LandType : int
+	public enum LandType : byte
 	{
 		// The order is important
 		Clear,
@@ -16,13 +14,12 @@ namespace CCEngine.Simulation
 		Water,
 		River,
 		Rough,
-		Ore,
+		Resource,
 		Wall,
+		Count,
 	}
 
-	/// <summary>
 	/// Land specifies which tiles are passable by which movement zones.
-	/// </summary>
 	public class Land
 	{
 		private static Dictionary<LandType, string> translate = new Dictionary<LandType, string>
@@ -34,7 +31,7 @@ namespace CCEngine.Simulation
 			{LandType.Water, "Water"},
 			{LandType.River, "River"},
 			{LandType.Rough, "Rough"},
-			{LandType.Ore, "Ore"},
+			{LandType.Resource, "Ore"},
 			{LandType.Wall, "Wall"},
 		};
 

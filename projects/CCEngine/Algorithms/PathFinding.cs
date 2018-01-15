@@ -8,7 +8,7 @@ namespace CCEngine.Algorithms
 {
 	public interface IGrid<PathConstraints>
 	{
-		IEnumerable<Tuple<CPos, int>> GetPassableNeighbors(PathConstraints pc, CPos cpos);
+		IEnumerable<(CPos, int)> GetPassableNeighbors(PathConstraints pc, CPos cpos);
 		Land GetLandAt(CPos cpos);
 	}
 
@@ -59,10 +59,8 @@ namespace CCEngine.Algorithms
 				}
 
 				// Explore all passable adjacent nodes.
-				foreach (var neighbor in grid.GetPassableNeighbors(pc, current))
+				foreach (var (next, cost) in grid.GetPassableNeighbors(pc, current))
 				{
-					var next = neighbor.Item1;
-					var cost = neighbor.Item2;
 					var newCost = costSoFar[current] + cost;
 
 					if (!costSoFar.ContainsKey(next) || newCost < costSoFar[next])

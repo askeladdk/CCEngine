@@ -4,6 +4,44 @@ using CCEngine.Simulation;
 
 namespace CCEngine
 {
+	public class RenderBounds
+	{
+		private Point screenTopLeft;
+		private Rectangle cellBounds;
+		private Rectangle objectBounds;
+
+		public Point ScreenTopLeft { get => screenTopLeft; }
+		public Rectangle CellBounds { get => cellBounds; }
+		public Rectangle ObjectBounds { get => objectBounds; }
+
+		public RenderBounds(Camera cam)
+		{
+			const int TileSize = Constants.TileSize;
+			var screenOffsetX = cam.TopLeft.X % TileSize;
+			var screenOffsetY = cam.TopLeft.Y % TileSize;
+			var edgeX = (cam.TopLeft.X + cam.ViewPort.Width) % TileSize;
+			var edgeY = (cam.TopLeft.Y + cam.ViewPort.Height) % TileSize;
+			this.screenTopLeft = new Point(
+				cam.ViewPort.X - screenOffsetX,
+				cam.ViewPort.Y - screenOffsetY
+			);
+
+			this.cellBounds = new Rectangle(
+				cam.TopLeft.X / TileSize,
+				cam.TopLeft.Y / TileSize,
+				(cam.ViewPort.Width  / TileSize) + ((screenOffsetX + edgeX) != 0 ? 1 : 0),
+				(cam.ViewPort.Height / TileSize) + ((screenOffsetY + edgeY) != 0 ? 1 : 0)
+			);
+
+			this.objectBounds = new Rectangle(
+				Constants.TileSize * Math.Max(0, cellBounds.X),
+				Constants.TileSize * Math.Max(0, cellBounds.Y),
+				Constants.TileSize * Math.Min(cellBounds.Width, Constants.MapSize),
+				Constants.TileSize * Math.Min(cellBounds.Height, Constants.MapSize)
+			);
+		}
+	}
+
 	public class Camera
 	{
 		private Rectangle viewPort = new Rectangle(); // viewable area in screen space
@@ -24,6 +62,8 @@ namespace CCEngine
 				viewPort = value;
 			}
 		}
+
+		public RenderBounds RenderBounds { get => new RenderBounds(this); }
 
 		public void SetTopLeft(int mapX, int mapY)
 		{
@@ -68,45 +108,20 @@ namespace CCEngine
 			return new Point(x2, y2);
 		}
 
-		/// <summary>
-		/// Calculates which cells are in view and from which screen coordinate rendering should begin.
-		/// </summary>
-		/// <param name="screenTopLeft">Start rendering from this screen coordinate.</param>
-		/// <param name="cellBounds">Region of visible cells.</param>
-		public void GetRenderArea(out Point screenTopLeft, out Rectangle cellBounds)
+		public void SetBounds(Rectangle bounds)
 		{
-			const int TileSize = Constants.TileSize;
-			var screenOffsetX = topLeft.X % TileSize;
-			var screenOffsetY = topLeft.Y % TileSize;
-			var edgeX = (topLeft.X + viewPort.Width) % TileSize;
-			var edgeY = (topLeft.Y + viewPort.Height) % TileSize;
-			screenTopLeft = new Point(
-				viewPort.X - screenOffsetX,
-				viewPort.Y - screenOffsetY
-			);
-			cellBounds = new Rectangle(
-				topLeft.X / TileSize,
-				topLeft.Y / TileSize,
-				(viewPort.Width  / TileSize) + ((screenOffsetX + edgeX) != 0 ? 1 : 0),
-				(viewPort.Height / TileSize) + ((screenOffsetY + edgeY) != 0 ? 1 : 0)
-			);
-		}
-
-		public void SetBounds(Map map)
-		{
-			var b = map.Bounds;
 			var t = Constants.TileSize;
 
 			mapBounds = new Rectangle(
-				t * b.X,
-				t * b.Y,
-				t * b.Width,
-				t * b.Height
+				t * bounds.X,
+				t * bounds.Y,
+				t * bounds.Width,
+				t * bounds.Height
 			);
 
 			SetTopLeft(
-				t * b.Location.X,
-				t * b.Location.Y
+				t * bounds.Location.X,
+				t * bounds.Location.Y
 			);
 		}
 	}

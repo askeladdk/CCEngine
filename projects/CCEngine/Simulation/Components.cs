@@ -57,8 +57,8 @@ namespace CCEngine.Simulation
 
 	public class CAnimation : IComponent
 	{
-		private SpriteArt art;
-		private string artId;
+		private Sprite sprite;
+		private Sequence sequence;
 		private string animId;
 		private bool reset;
 		private int frame;
@@ -69,7 +69,7 @@ namespace CCEngine.Simulation
 
 		public bool Reset { get => reset; }
 
-		public Sprite Sprite { get => art.Sprite; }
+		public Sprite Sprite { get => sprite; }
 
 		public Rectangle AABB { get => aabb; }
 		public Vector2I DrawOffset { get => drawOffset; }
@@ -87,16 +87,21 @@ namespace CCEngine.Simulation
 
 		public void Initialise(IAttributeTable table)
 		{
-			artId = table.Get<string>("Animation.Art");
-			animId = table.Get<string>("Animation.Sequence", "Idle");
+			var spriteId = table.Get<string>("Animation.Sprite");
+			var seqId = table.Get<string>("Animation.Sequence");
+
+			var g = Game.Instance;
+			sprite = g.LoadAsset<Sprite>(spriteId);
+			sequence = g.ObjectStore.GetSequence(seqId);
+
+			animId = table.Get<string>("Animation.Initial", "Idle");
 			frame = table.Get<int>("Animation.StartFrame", 0);
 			reset = table.Get<bool>("Animation.Reset", false);
-			art = Game.Instance.GetArt(artId);
 			drawOffset = new Vector2I(
 				table.Get<int>("Animation.DrawOffsetX", 0),
 				table.Get<int>("Animation.DrawOffsetY", 0)
 			);
-			var sz = art.Sprite.Size;
+			var sz = sprite.Size;
 			this.aabb = new Rectangle(
 				sz.Width / -2,
 				sz.Height / -2,
@@ -107,7 +112,7 @@ namespace CCEngine.Simulation
 
 		public int NextFrame(int globalClock, BinaryAngle facing)
 		{
-			var nextFrame = art.GetNextFrame(globalClock, facing, animId);
+			var nextFrame = sequence.GetNextFrame(globalClock, facing, animId);
 			reset = nextFrame < frame;
 			frame = nextFrame;
 			return frame;
@@ -133,9 +138,10 @@ namespace CCEngine.Simulation
 			var foundationId = table.Get<string>("Placement.Foundation");
 			var occupyGridId = table.Get<string>("Placement.Occupy");
 			var overlapGridId = table.Get<string>("Placement.Overlap");
-			this.foundation = Game.Instance.GetFoundation(foundationId);
-			this.occupyGrid = Game.Instance.GetGrid(occupyGridId);
-			this.overlapGrid = Game.Instance.GetGrid(overlapGridId);
+			var objectStore = Game.Instance.ObjectStore;
+			this.foundation = objectStore.GetFoundation(foundationId);
+			this.occupyGrid = objectStore.GetGrid(occupyGridId);
+			this.overlapGrid = objectStore.GetGrid(overlapGridId);
 		}
 	}
 }

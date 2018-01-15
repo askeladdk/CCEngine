@@ -46,7 +46,7 @@ namespace CCEngine.Logic
 					else if (k.Key == Key.Down)
 						g.Camera.Pan(0, 8);
 					else if(k.Key == Key.P)
-						g.PlayRandomMusic();
+						g.Jukebox.PlayRandom();
 					break;
 				default:
 					e.GUI.TakeInput(this, true);
@@ -59,7 +59,10 @@ namespace CCEngine.Logic
 			var g = Game.Instance;
 			var pos = e.GUI.Mouse;
 			if(e.Interaction != Interaction.Cold)
-				g.Map.cellHighlight = g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos;
+			{
+				highlight = g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos;
+				g.World.Map.Highlight = highlight;
+			}
 
 			if(e.Interaction == Interaction.Enter)
 			{
@@ -72,11 +75,12 @@ namespace CCEngine.Logic
 		private TopBarWidget topBarWidget;
 		private SideBarWidget sideBarWidget;
 		private MapViewWidget mapViewWidget;
+		private CPos highlight;
 
 		private void Initialize()
 		{
 			initialized = true;
-			Game.Instance.LoadMap("scg01ea.ini");
+			Game.Instance.LoadMap("scg01ea");
 
 			topBarWidget = new TopBarWidget();
 			sideBarWidget = new SideBarWidget();
@@ -89,7 +93,7 @@ namespace CCEngine.Logic
 		public void HandleMessage(IMessage message)
 		{
 			var g = Game.Instance;
-			g.Map.HandleMessage(message);
+			g.World.HandleMessage(message);
 		}
 
 		public void Show()
@@ -105,7 +109,7 @@ namespace CCEngine.Logic
 		public void Update(float dt)
 		{
 			var g = Game.Instance;
-			g.Map.Update(dt);
+			g.World.Update(dt);
 			g.Interact(this);
 		}
 
@@ -116,14 +120,18 @@ namespace CCEngine.Logic
 
 			renderer.Begin();
 
-			renderer.PushPalette(g.Map.Theater.Palette);
+			renderer.PushPalette(g.World.Map.Theater.Palette);
 			mapViewWidget.Render(renderer, dt);
 			topBarWidget.Render(renderer);
 			sideBarWidget.Render(renderer);
 			renderer.PopPalette();
 
-			var grad6 = g.GetFont("GRAD6FNT");
-			renderer.Text(grad6, "Reinforcements have arrived.", 2, 16);
+			var fnt = g.GetFont("6POINT");
+			var landtype = g.World.Map.GetLandType(highlight);
+			renderer.Text(fnt, "Cell {0}: {1}".F(highlight, landtype), 2, 400 - 64);
+			renderer.Text(fnt, "FPS: {0}".F((int)g.RenderFrequency), 2, 400 - 48);
+			renderer.Text(fnt, "UPS: {0}".F((int)g.UpdateFrequency), 2, 400 - 32);
+			renderer.Text(fnt, "Clock: {0}".F(g.GlobalClock), 2, 400 - 16);
 
 			renderer.End();
 		}

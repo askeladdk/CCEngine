@@ -31,24 +31,27 @@ namespace CCEngine
 
 		// Simulation
 		private int globalClock = 0;
-		private Map map;
+		private World world;
+		private ObjectStore objectStore;
 
 		// Misc
 		private static Game instance;
 		private Camera camera;
 		private Display display;
+		private Jukebox jukebox;
 		private float interpolatedTime = 0;
 
 		public static Game Instance { get => instance; }
 
 		public int GlobalClock { get => this.globalClock; }
-		public Map Map { get => this.map; }
+		public World World { get => this.world; }
+		public ObjectStore ObjectStore { get => this.objectStore; }
 
 		public VFS.VFS VFS { get => this.vfs; }
 		public Renderer Renderer { get => this.renderer; }
 		public Camera Camera { get => this.camera; }
 		public Display Display { get => this.display; }
-		public ECS.Registry Registry { get => this.map.Registry; }
+		public Jukebox Jukebox { get => jukebox; }
 
 		private Game(int width, int height,
 			GameWindowFlags flags = GameWindowFlags.Default,
@@ -65,11 +68,10 @@ namespace CCEngine
 			this.assets.RegisterLoader<Palette>(new PaletteLoader());
 			this.assets.RegisterLoader<Sprite>(new SpriteLoader());
 			this.assets.RegisterLoader<TmpFile>(new TmpLoader());
-			this.assets.RegisterLoader<Map>(new MapLoader());
+			// this.assets.RegisterLoader<Map>(new MapLoader());
 			this.assets.RegisterLoader<FntFile>(new FontLoader());
 			this.assets.RegisterLoader<BinFile>(new BinFLoader());
 			this.assets.RegisterLoader<IAudioSource>(new AudLoader());
-			//this.assets.RegisterLoader<World>(new WorldLoader());
 
 			this.logger = new Logger(this, LogLevel.Debug);
 			this.logic = new Logic.GameLogic(this);
@@ -98,9 +100,11 @@ namespace CCEngine
 		{
 			this.renderer = new Renderer(this.display);
 			this.InitialiseGUI();
-			this.SetRules();
-			this.LoadWorldData();
-			this.LoadMusic();
+			this.jukebox = new Jukebox(this.audio, LoadAsset<IniFile>("scores.ini", false));
+
+			var artcfg = LoadAsset<IniFile>("art.ini", false);
+			this.objectStore = new ObjectStore(artcfg);
+			this.world = new World(objectStore);
 		}
 
 		protected override void OnUpdateFrame(FrameEventArgs e)
@@ -112,8 +116,6 @@ namespace CCEngine
 			this.audio.Update();
 			this.gui.Flip();
 			this.globalClock++;
-
-			this.Title = "CCEngine - FPS: {0}, Clock: {1}".F((int)this.UpdateFrequency, this.globalClock);
 			this.interpolatedTime = 0;
 		}
 
@@ -171,11 +173,8 @@ namespace CCEngine
 
 		public void LoadMap(string mapfile)
 		{
-			var map = assets.Load<Map>(mapfile, false);
-			if (map == null)
-				throw new Exception("Map {0} not found!".F(mapfile));
-			this.map = map;
-			this.camera.SetBounds(this.map);
+			this.world.LoadScenario(mapfile);
+			this.camera.SetBounds(this.world.Map.Bounds);
 		}
 
 		static void Main(string[] args)
