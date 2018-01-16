@@ -2,7 +2,9 @@
 ---
 
 > He who controls the past, commands the future.
+>
 > He who commands the future, conquers the past.
+>
 > -- Kane
 
 ## About
