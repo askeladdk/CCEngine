@@ -29,7 +29,7 @@ What is done and what remains to be done?
 * [ ] `Strategic AI` - Capable of planning to defeat the player.
 * [ ] `Campaigns` - Map loading, trigger system, mission progression.
 * [ ] `Multiplayer` - This is a looong way off.
-* [ ] `Map editor` - Eventually I would like to have an integrated editor to make your own single- and multiplayer maps.
+* [ ] `Map editor` - Eventually I would like to have an integrated editor to make your own single- and multiplayer maps with.
 
 ### File types
 
