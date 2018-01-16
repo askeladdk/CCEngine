@@ -1,14 +1,60 @@
 # CCEngine
+---
 
-Frustrated by all the failed, halted, and delayed attempts to recreate the C&C and RA1 game engines, I am giving it my own shot.
+> He who controls the past, commands the future.
+> He who commands the future, conquers the past.
+> -- Kane
 
-My aim is for CCEngine to emulate the original games as closely as possible, but with no hardcoded values and greater extensibility. The original game assets will be used whenever possible.
+## About
+
+CCEngine is my attempt to recreate the C&C: Tiberian Dawn and Red Alert 1 games in a single engine. My aim is to emulate the original games as closely as possible with as little hard coded values as possible, so as to make it easy to extend the games as well as the engine itself. The original game assets will be used whenever possible. I am focusing my attention on RA1 first because it is a more advanced game.
+
+CCEngine is programmed in C# on the .NET Core platform with OpenTK (OpenGL + OpenAL).
+
+## Roadmap
+
+What is done and what remains to be done?
+
+### Engine parts
+
+* [x] `Audio` - Music and sounds.
+* [x] `Renderer` - Hardware accelerated and capable of post-processing effects.
+* [x] `GUI` - Handle user interactions (in progress).
+* [x] `Asset Manager` - Loads files from folders and (nested) `.mix` files.
+* [x] `Entity Component System` - Organise code and data related to game entities such as infantry, vehicles, projectiles, etc.
+* [ ] `Game Mechanics` - Simulate the interactions between entities.
+* [ ] `Tactical AI` - Intelligent pathfinding and target acquisition.
+* [ ] `Strategic AI` - Capable of planning to defeat the player.
+* [ ] `Campaigns` - Map loading, trigger system, mission progression.
+* [ ] `Multiplayer` - This is a looong way off.
+* [ ] `Map editor` - Eventually I would like to have an integrated editor to make your own single- and multiplayer maps.
+
+### File types
+
+These are all the file types that the engine can understand and use.
+
+* [x] `.aud`
+* [x] `.cps`
+* [x] `.fnt`
+* [x] `.ini`
+* [x] `.mix`
+* [x] `.pal`
+* [x] `.pcx`
+* [x] `.shp`
+* [x] `.tem`, `.sno`, `.int`, (etc)
+* [ ] `.vqa`
+* [ ] `.vqp`
+* [ ] `.wsa`
+
+### Supported platforms
+
+CCEngine is cross-platform by default as it is built on .NET Core. I have no plans to support mobile platforms as the games simply were not designed for it.
+
+* [x] `Windows`
+* [x] `OSX`
+* [x] `Linux` (not tested yet)
 
 ## FAQ
-
-### Which games will be supported?
-
-Only Tiberian Dawn and Red Alert 1 will be supported. I am focusing my attention on RA1 first because it is a more advanced game.
 
 ### Why bother when OpenRA already exists?
 
@@ -16,22 +62,4 @@ OpenRA strays too far from the original gameplay and is not a drop-in replacemen
 
 ### Will you make improvements to the games?
 
-My aim is to emulate the original games as closely as possible, but I do want to make some interface additions such as right-click scrolling, shift-add units to groups, attack-move command, build queues, and better sidebar cameo sorting. CCEngine will also allow defining new units and such.
-
-### What is done so far?
-
-- Basic engine framework (work in progress).
-- Hardware accelerated sprite rendering.
-- Virtual file system loads nested and encrypted .mix archives.
-- Loading palettes, sprites, images, string tables, maps (partially) and .ini files.
-
-### What is left to do?
-
-- User interface.
-- Map rendering (in progress).
-- Game mechanics.
-- Campaigns.
-- Multiplayer.
-- Save games.
-- AI and path finding.
-- Loading and displaying fonts, animations, movies, sound effects and music.
+My aim is to emulate the original games as closely as possible, but I do want to make some interface additions such as right-click scrolling, shift-add units to groups, attack-move command, build queues, and better sidebar cameo sorting. It will also be possible to define new units and such.
