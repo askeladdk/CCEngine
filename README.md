@@ -1,9 +1,8 @@
 # CCEngine
----
 
-> He who controls the past, commands the future.
+> He who controls the past commands the future.
 >
-> He who commands the future, conquers the past.
+> He who commands the future conquers the past.
 >
 > -- Kane
 
@@ -23,13 +22,13 @@ What is done and what remains to be done?
 * [x] `Renderer` - Hardware accelerated and capable of post-processing effects.
 * [x] `GUI` - Handle user interactions (in progress).
 * [x] `Asset Manager` - Loads files from folders and (nested) `.mix` files.
-* [x] `Entity Component System` - Organise code and data related to game entities such as infantry, vehicles, projectiles, etc.
-* [ ] `Game Mechanics` - Simulate the interactions between entities.
+* [x] `Entity Component System` - Organise data and data transformations related to game entities.
+* [ ] `Game Mechanics` - Simulate the interactions between game entities.
 * [ ] `Tactical AI` - Intelligent pathfinding and target acquisition.
 * [ ] `Strategic AI` - Capable of planning to defeat the player.
 * [ ] `Campaigns` - Map loading, trigger system, mission progression.
-* [ ] `Multiplayer` - This is a looong way off.
-* [ ] `Map editor` - Eventually I would like to have an integrated editor to make your own single- and multiplayer maps with.
+* [ ] `Multiplayer` - Up to eight players.
+* [ ] `Map editor` - Integrated map editor to create your own single- and multiplayer maps with.
 
 ### File types
 
@@ -65,3 +64,22 @@ OpenRA strays too far from the original gameplay and is not a drop-in replacemen
 ### Will you make improvements to the games?
 
 My aim is to emulate the original games as closely as possible, but I do want to make some interface additions such as right-click scrolling, shift-add units to groups, attack-move command, build queues, and better sidebar cameo sorting. It will also be possible to define new units and such.
+
+### Why two games in one engine?
+
+TD and RA have almost the same engine, though each do have some unique features. My goal is to implement all unique features in a single engine.
+
+**Unique features**
+* TD: New units are delivered by aircraft on the Nod Airstrip.
+* TD: Tiberium damages and kills infantry.
+* TD: Visceroids appear on some maps.
+* TD: The Nod campaign ending (choose which landmark to unleash the Ion Cannon on).
+* TD: Hovercraft can only move horizontally and vertically and shows transported units on top.
+* TD: Gunboat can only move horizontally without stopping while firing missiles.
+* TD: SAM Site popup before firing animation.
+* TD: Obelisk laser graphical effect.
+* RA: The Chronosphere and Iron Curtain superweapons.
+* RA: Larger maps (128x128 vs 64x64) and more players (4 vs 8).
+* RA: Destroyable bridges.
+* RA: Cruiser is the only unit in both games that has two turrets.
+* RA: Tesla weapon graphical effect.
