@@ -7,9 +7,14 @@ using CCEngine.Algorithms;
 
 namespace CCEngine.Simulation
 {
-	public class CLocomotion : IComponent
+	public class CLocomotion : IComponent<CLocomotion>
 	{
 		private Locomotor locomotor;
+
+		public XPos LastPosition
+		{
+			get => this.locomotor.LastPosition;
+		}
 
 		public XPos Position
 		{
@@ -53,9 +58,16 @@ namespace CCEngine.Simulation
 					break;				
 			}
 		}
+
+		public static object Create(IAttributeTable table)
+		{
+			var loco = new CLocomotion();
+			loco.Initialise(table);
+			return loco;
+		}
 	}
 
-	public class CAnimation : IComponent
+	public class CAnimation : IComponent<CAnimation>
 	{
 		private Sprite sprite;
 		private Sequence sequence;
@@ -117,9 +129,16 @@ namespace CCEngine.Simulation
 			frame = nextFrame;
 			return frame;
 		}
+
+		public static object Create(IAttributeTable table)
+		{
+			var anim = new CAnimation();
+			anim.Initialise(table);
+			return anim;
+		}
 	}
 
-	class CPlacement : IComponent
+	class CPlacement : IComponent<CPlacement>
 	{
 		private Foundation foundation;
 		private StructureGrid occupyGrid;
@@ -142,6 +161,13 @@ namespace CCEngine.Simulation
 			this.foundation = objectStore.GetFoundation(foundationId);
 			this.occupyGrid = objectStore.GetGrid(occupyGridId);
 			this.overlapGrid = objectStore.GetGrid(overlapGridId);
+		}
+
+		public static object Create(IAttributeTable table)
+		{
+			var plac = new CPlacement();
+			plac.Initialise(table);
+			return plac;
 		}
 	}
 }

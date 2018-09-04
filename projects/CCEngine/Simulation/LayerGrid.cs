@@ -1,16 +1,19 @@
+using System;
+using CCEngine.ECS;
+
 namespace CCEngine.Simulation
 {
 	public struct GridCell
 	{
-		private int entityId;
+		private Entity entity;
 
-		public int EntityID { get => entityId; }
+		public Entity Entity { get => entity; }
 
-		public bool IsPassable { get => entityId == 0; }
+		public bool IsPassable { get => entity.Equals(Entity.Invalid); }
 
-		public GridCell(int entityId = 0)
+		public GridCell(Entity entity)
 		{
-			this.entityId = entityId;
+			this.entity = entity;
 		}
 	}
 
@@ -21,10 +24,10 @@ namespace CCEngine.Simulation
 		public void Clear()
 		{
 			for(var i = 0; i < layer.Length; i++)
-				layer[i] = new GridCell();
+				layer[i] = new GridCell(Entity.Invalid);
 		}
 
-		public bool CanPlace(StructureGrid grid, CPos cell)
+		public bool CanPlace(CPos cell, StructureGrid grid)
 		{
 			var cellid = cell.CellId;
 			for (int i = 0; i < grid.Length; i++)
@@ -33,11 +36,26 @@ namespace CCEngine.Simulation
 			return true;
 		}
 
-		public void Place(StructureGrid grid, CPos cell, int entityId)
+		public void Place(CPos cell, Entity entity, StructureGrid grid)
 		{
 			var cellid = cell.CellId;
 			for (int i = 0; i < grid.Length; i++)
-				layer[cellid + grid[i]] = new GridCell(entityId);
+				layer[cellid + grid[i]] = new GridCell(entity);
+		}
+
+		public void Place(CPos cell, Entity entity)
+		{
+			layer[cell.CellId] = new GridCell(entity);
+		}
+
+		public void Clear(CPos cell)
+		{
+			layer[cell.CellId] = new GridCell();
+		}
+
+		public bool IsPassable(CPos cell)
+		{
+			return layer[cell.CellId].IsPassable;
 		}
 
 		public GridCell this[CPos cell]

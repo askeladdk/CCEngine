@@ -25,7 +25,7 @@ namespace CCEngine.Simulation
 			var g = Game.Instance;
 			CLocomotion loco;
 
-			if(g.World.Registry.TryGetComponent<CLocomotion>(mission.EntityID, out loco))
+			if(g.World.Registry.TryGet<CLocomotion>(mission.Entity, out loco))
 			{
 				var field = new SingularFlowField<MovementZone>(g.World.Map,
 					loco.Position.CPos, mission.Destination, MovementZone.Track);
@@ -39,7 +39,7 @@ namespace CCEngine.Simulation
 		}
 	}
 
-	public class CRadio : IComponent
+	public class CRadio : IComponent<CRadio>
 	{
 		public const uint LaneMovement = 1;
 
@@ -71,60 +71,67 @@ namespace CCEngine.Simulation
 		{
 			actionList = new ActionList<CRadio>();
 		}
-	}
 
-	public class PRadioReceiver : QueueProcessor<IMessage>, IMessageHandler
-	{
-		private PRadioReceiver(Registry registry) : base(registry) { }
-
-		public override bool IsActive { get => true; }
-		public override bool IsRenderLoop { get => false; }
-		protected override int MaxMessagesPerFrame { get => 0; }
-
-		protected override void Process(object e, IMessage message)
+		public static object Create(IAttributeTable table)
 		{
-			var g = Game.Instance;
-
-			if(message is IMission)
-			{
-				var mission = message as IMission;
-				var entityId = mission.EntityID;
-				CRadio radio;
-				if(Registry.TryGetComponent<CRadio>(entityId, out radio))
-				{
-					radio.Push(mission);
-				}
-			}
-		}
-
-		public static PRadioReceiver Attach(Registry registry)
-		{
-			return new PRadioReceiver(registry);
+			var radio = new CRadio();
+			radio.Initialise(table);
+			return radio;
 		}
 	}
 
-	public class PRadio : SingleProcessor
-	{
-		private IFilter filter;
+	// public class PRadioReceiver : QueueProcessor<IMessage>, IMessageHandler
+	// {
+	// 	private PRadioReceiver(Registry registry) : base(registry) { }
 
-		private PRadio(Registry registry) : base(registry)
-		{
-			filter = registry.Filter.All(typeof(CRadio));
-		}
+	// 	public override bool IsActive { get => true; }
+	// 	public override bool IsRenderLoop { get => false; }
+	// 	protected override int MaxMessagesPerFrame { get => 0; }
 
-		protected override IFilter Filter { get => filter; }
-		public override bool IsActive { get => true; }
-		public override bool IsRenderLoop { get => false; }
+	// 	protected override void Process(object e, IMessage message)
+	// 	{
+	// 		var g = Game.Instance;
 
-		protected override void Process(object e, int entityId)
-		{
-			var radio = Registry.GetComponent<CRadio>(entityId);
-			radio.Process();
-		}
+	// 		if(message is IMission)
+	// 		{
+	// 			var mission = message as IMission;
+	// 			var entityId = mission.EntityID;
+	// 			CRadio radio;
+	// 			if(Registry.TryGetComponent<CRadio>(entityId, out radio))
+	// 			{
+	// 				radio.Push(mission);
+	// 			}
+	// 		}
+	// 	}
 
-		public static PRadio Attach(Registry registry)
-		{
-			return new PRadio(registry);
-		}
-	}
+	// 	public static PRadioReceiver Attach(Registry registry)
+	// 	{
+	// 		return new PRadioReceiver(registry);
+	// 	}
+	// }
+
+	// public class PRadio : SingleProcessor
+	// {
+	// 	private IFilter filter;
+
+	// 	private PRadio(Registry registry) : base(registry)
+	// 	{
+	// 		filter = registry.Filter.All(typeof(CRadio));
+	// 	}
+
+	// 	protected override IFilter Filter { get => filter; }
+	// 	public override bool IsActive { get => true; }
+	// 	public override bool IsRenderLoop { get => false; }
+
+	// 	protected override void Process(object e, int entityId)
+	// 	{
+	// 		var radio = Registry.GetComponent<CRadio>(entityId);
+	// 		radio.Process();
+	// 	}
+
+	// 	public static PRadio Attach(Registry registry)
+	// 	{
+	// 		return new PRadio(registry);
+	// 	}
+	// }
 }

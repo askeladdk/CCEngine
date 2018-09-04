@@ -82,6 +82,7 @@ namespace CCEngine.GUI
 				alpha = dt,
 				bounds = bounds,
 				renderer = renderer,
+				camera = g.Camera,
 			};
 
 			g.World.Render(renderArgs);

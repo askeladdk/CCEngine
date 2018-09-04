@@ -1,9 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CCEngine.ECS;
 using CCEngine.FileFormats;
 using CCEngine.Rendering;
+using CCEngine.Collections;
 
 namespace CCEngine.Simulation
 {
@@ -11,8 +13,20 @@ namespace CCEngine.Simulation
 	/// There is only one World in the game.
 	public partial class World
 	{
-		private Registry registry;
-		private PRadioReceiver pradiorec;
+		public delegate object Builder(IAttributeTable table);
+
+		private const int MaxEntities = 1024;
+
+		private static IReadOnlyDictionary<Type, Builder> componentBuilders =
+			new Dictionary<Type, Builder> {
+				{typeof(CLocomotion), CLocomotion.Create},
+				{typeof(CAnimation), CAnimation.Create},
+				{typeof(CPlacement), CPlacement.Create},
+				{typeof(CRadio), CRadio.Create},
+			};
+
+		private Registry registry = new Registry(MaxEntities);
+		private Queue<IMission> radio = new Queue<IMission>();
 		private ObjectStore objectStore;
 		private Map map;
 
@@ -24,16 +38,79 @@ namespace CCEngine.Simulation
 		{
 			this.objectStore = objectStore;
 			this.map = new Map(objectStore);
-			CreateRegistry();
+
+			registry.RegisterType<CAnimation>();
+			registry.RegisterType<CLocomotion>();
+			registry.RegisterType<CRadio>();
+			registry.RegisterType<CPlacement>();
 		}
 
-		private void CreateRegistry()
+		private Entity Assemble(Blueprint bp, IAttributeTable attributes)
 		{
-			registry = new Registry();
-			PAnimation.Attach(registry);
-			PRender.Attach(registry);
-			pradiorec = PRadioReceiver.Attach(registry);
-			PRadio.Attach(registry);
+			var entity = registry.Create();
+			var table = new AttributeTableList{attributes, bp.Configuration};
+			foreach(var type in bp.ComponentTypes)
+				registry.Attach(type, entity, componentBuilders[type](table));
+			return entity;
+		}
+
+		private void ProcessAnimations()
+		{
+			var g = Game.Instance;
+			var clock = g.GlobalClock;
+			foreach(var entity in registry.View<CAnimation, CLocomotion>())
+			{
+				var loco = registry.Get<CLocomotion>(entity);
+				var anim = registry.Get<CAnimation>(entity);
+				loco.Process();
+				anim.NextFrame(clock, loco.Facing);
+				//map.Unplace(loco.LastPosition.CPos);
+				//map.Place(loco.Position.CPos, entity);
+			}
+		}
+
+		private void ProcessRadio()
+		{
+			var g = Game.Instance;
+
+			while(radio.Count != 0)
+			{
+				var mission = radio.Dequeue();
+				var entity = mission.Entity;
+				CRadio cradio;
+				if(Registry.TryGet<CRadio>(entity, out cradio))
+				{
+					cradio.Push(mission);
+				}
+			}
+
+			foreach(var entity in registry.View<CRadio>())
+			{
+				registry.Get<CRadio>(entity).Process();
+			}
+		}
+
+		protected void RenderObjects(RenderArgs args)
+		{
+			var g = Game.Instance;
+			var camera = g.Camera;
+			var renderer = args.renderer;
+			var objectBounds = args.bounds.ObjectBounds;
+			var alpha = args.alpha;
+
+			foreach(var entity in registry.View<CAnimation, CLocomotion>())
+			{
+				var loco = registry.Get<CLocomotion>(entity);
+				var anim = registry.Get<CAnimation>(entity);
+				var pos = loco.InterpolatedPosition(alpha);
+				var bb = anim.AABB.Translate(pos.X, pos.Y);
+				if (objectBounds.IntersectsWith(bb))
+				{
+					var p = camera.MapToScreenCoord(pos.X, pos.Y);
+					renderer.Blit(anim.Sprite, anim.Frame,
+						p.X + anim.DrawOffset.X, p.Y + anim.DrawOffset.Y);
+				}
+			}
 		}
 
 		public void LoadScenario(string scname)
@@ -42,6 +119,8 @@ namespace CCEngine.Simulation
 			var rulesini = g.LoadAsset<IniFile>("rules.ini");
 			var scenario = Scenario.Load(scname, objectStore);
 			var rules = new ConfigurationList(scenario.Configuration, rulesini);
+
+			registry.Clear();
 			objectStore.LoadRules(rules);
 			map.Load(scenario);
 
@@ -59,6 +138,7 @@ namespace CCEngine.Simulation
 			{
 				var attrs = new AttributeTable
 				{
+					{"Basic.Owner", unit.house},
 					{"Locomotion.Position", unit.cell.XPos},
 					{"Locomotion.Facing", unit.facing},
 				};
@@ -70,13 +150,16 @@ namespace CCEngine.Simulation
 		private void SpawnTechno(string id, IAttributeTable table)
 		{
 			var g = Game.Instance;
-			int eid = 0;
-			var bp = objectStore.GetTechnoType(id);
+			var bp = objectStore.GetUnitType(id);
+			Entity eid;
 
-			switch(bp.Configuration.Get<TechnoType>("Type"))
+			if(bp == null)
+				throw new Exception("TechnoType {0} does not exist.".F(id));
+
+			switch(bp.Configuration.Get<TechnoType>("Basic.Type"))
 			{
 				case TechnoType.Vehicle:
-					eid = registry.Spawn(bp, table);
+					eid = Assemble(bp, table);
 					break;
 				default:
 					throw new Exception("Not implemented");
@@ -85,17 +168,17 @@ namespace CCEngine.Simulation
 			g.Log("Spawned {0} ({1})\n{2}", id, eid, table);
 		}
 
-		private bool TryPlace(int entityId)
+		private bool TryPlace(Entity entity)
 		{
 			CPlacement placement;
-			if(!registry.TryGetComponent<CPlacement>(entityId, out placement))
+			if(!registry.TryGet<CPlacement>(entity, out placement))
 				return false;
 
-			var pose = registry.GetComponent<CLocomotion>(entityId);
+			var pose = registry.Get<CLocomotion>(entity);
 			var center = pose.Position.CPos;
 
 			var occupy = placement.OccupyGrid;
-			map.Place(occupy, center, entityId);
+			map.Place(center, entity, occupy);
 			return true;
 		}
 
@@ -103,7 +186,7 @@ namespace CCEngine.Simulation
 		{
 			var g = Game.Instance;
 			var bp = map.Theater.GetTerrain(id);
-			var eid = registry.Spawn(bp, table);
+			var eid = Assemble(bp, table);
 			TryPlace(eid);
 			g.Log("Spawned {0} ({1})\n{2}", id, eid, table);
 		}
@@ -111,6 +194,7 @@ namespace CCEngine.Simulation
 		public void HandleMessage(IMessage msg)
 		{
 			MsgSpawnEntity spawn;
+			IMission mission;
 
 			if(msg.Is<MsgSpawnEntity>(out spawn))
 			{
@@ -124,20 +208,39 @@ namespace CCEngine.Simulation
 						break;
 				}
 			}
-
-			pradiorec.OnMessage(msg);
+			else if(msg.Is<IMission>(out mission))
+			{
+				radio.Enqueue(mission);
+			}
 		}
 
 		public void Update(float dt)
 		{
 			Map.Update();
-			registry.Update(dt);
+			//registry.Update(dt);
+			ProcessAnimations();
+			ProcessRadio();
 		}
 
 		public void Render(RenderArgs args)
 		{
 			Map.Render(args);
-			registry.Render(args);
+			RenderObjects(args);
+			//registry.Render(args);
+		}
+
+		private static void ProcessAnimations(World src, World dst)
+		{
+			var g = Game.Instance;
+			var clock = g.GlobalClock;
+
+			foreach(var entity in src.registry.View<CAnimation, CLocomotion>())
+			{
+				var loco = src.registry.Get<CLocomotion>(entity);
+				var anim = src.registry.Get<CAnimation>(entity);
+				loco.Process();
+				anim.NextFrame(clock, loco.Facing);
+			}
 		}
 	}
 }

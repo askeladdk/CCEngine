@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 
 namespace CCEngine.Simulation
@@ -48,6 +49,29 @@ namespace CCEngine.Simulation
 				layer[i] = new OverlayCell();
 		}
 
+		private void Initialise(Rectangle bounds)
+		{
+			for(var y = bounds.Top; y < bounds.Bottom; y++)
+			{
+				for(var x = bounds.Left; x < bounds.Right; x++)
+				{
+					var cell = new CPos(x, y);
+					switch(layer[cell.CellId].Type)
+					{
+						case OverlayType.Wall:
+							UpdateWall(cell);
+							break;
+						case OverlayType.ResourceCommon:
+							InitialiseResourceCommon(cell);
+							break;
+						case OverlayType.ResourcePrecious:
+							InitialiseResourcePrecious(cell);
+							break;
+					}
+				}
+			}
+		}
+
 		public void Load(Scenario scenario)
 		{
 			var cells = scenario.Cells;
@@ -60,6 +84,8 @@ namespace CCEngine.Simulation
 					type = v.Type;
 				layer[i] = new OverlayCell(overlayId, type);
 			}
+
+			Initialise(scenario.Bounds);
 		}
 
 		public OverlayCell this[CPos cell]
@@ -96,15 +122,56 @@ namespace CCEngine.Simulation
 			layer[here] = layer[here].SetState(state);
 		}
 
-		/// Update one particular cell.
-		public void Update(CPos cell)
+		/// Count the number of neighbours (0-4) of the given type.
+		private int CountNeighbours(CPos cell, OverlayType type)
 		{
-			var type = layer[cell.CellId].Type;
-			if(type == OverlayType.Wall)
-				UpdateWall(cell);
+			var here = cell.CellId;
+			var neighbours = 0;
+			// North
+			if(layer[here - Constants.MapSize].Type == type)
+				neighbours += 1;
+			// East
+			if(layer[here + 1].Type == type)
+				neighbours += 1;
+			// South
+			if(layer[here + Constants.MapSize].Type == type)
+				neighbours += 1;
+			// West
+			if(layer[here - 1].Type == type)
+				neighbours += 1;
+			return neighbours;
 		}
 
-		/// Update all cells within bounds.
+		/// Set initial state of resources.
+		private void InitialiseResourceCommon(CPos cell)
+		{
+			var neighbours = CountNeighbours(cell, OverlayType.ResourceCommon);
+			var state = (short)Math.Max(3 * (1 + Math.Min(neighbours, 3)) - 1, 0);
+			var here = cell.CellId;
+			layer[here] = layer[here].SetState(state);
+		}
+
+		/// Set initial state of precious resources.
+		private void InitialiseResourcePrecious(CPos cell)
+		{
+			var neighbours = CountNeighbours(cell, OverlayType.ResourcePrecious);
+			var state = (short)Math.Min(neighbours, 3);
+			var here = cell.CellId;
+			layer[here] = layer[here].SetState(state);
+		}
+
+		/// Update the state of one particular cell.
+		public void Update(CPos cell)
+		{
+			switch(layer[cell.CellId].Type)
+			{
+				case OverlayType.Wall:
+					UpdateWall(cell);
+					break;
+			}
+		}
+
+		/// Update the state of all cells within bounds.
 		public void Update(Rectangle bounds)
 		{
 			for(var y = bounds.Top; y < bounds.Bottom; y++)
@@ -132,8 +199,14 @@ namespace CCEngine.Simulation
 					{
 						var ovrspr = map.Theater.GetOverlay(ovrid);
 						var frame = 0;
-						if(cell.Type == OverlayType.Wall)
-							frame = cell.State;
+						switch(cell.Type)
+						{
+							case OverlayType.Wall:
+							case OverlayType.ResourceCommon:
+							case OverlayType.ResourcePrecious:
+								frame = cell.State;
+								break;
+						}
 						args.renderer.Blit(ovrspr.Art, frame, screenX, screenY);
 					}
 

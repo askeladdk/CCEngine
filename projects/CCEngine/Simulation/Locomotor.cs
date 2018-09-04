@@ -32,6 +32,11 @@ namespace CCEngine.Simulation
 			this.facing = facing;
 		}
 
+		public XPos LastPosition
+		{
+			get => lastPosition;
+		}
+
 		public XPos Position
 		{
 			get => position;

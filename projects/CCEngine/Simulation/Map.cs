@@ -5,6 +5,7 @@ using OpenTK.Graphics;
 using CCEngine.Algorithms;
 using CCEngine.FileFormats;
 using CCEngine.Rendering;
+using CCEngine.ECS;
 
 namespace CCEngine.Simulation
 {
@@ -93,16 +94,25 @@ namespace CCEngine.Simulation
 			return true;
 		}
 
-		public void Place(StructureGrid grid, CPos cell, int entityId)
+		public void Place(CPos cell, Entity entity, StructureGrid grid)
 		{
-			this.grid.Place(grid, cell, entityId);
+			this.grid.Place(cell, entity, grid);
 		}
 
+		public void Place(CPos cell, Entity entity)
+		{
+			this.grid.Place(cell, entity);
+		}
+
+		public void Unplace(CPos cell)
+		{
+			this.grid.Clear(cell);
+		}
 
 		public bool IsPassable(CPos cell, MovementZone mz)
 		{
 			var land = objectStore.GetLand(GetLandType(cell));
-			return land.IsPassable(mz) && grid[cell].IsPassable;
+			return land.IsPassable(mz) && grid.IsPassable(cell);
 		}
 
 		private static (int dx, int dy, int cost)[] cellOffsets =
@@ -142,7 +152,7 @@ namespace CCEngine.Simulation
 
 		public void Update()
 		{
-			overlay.Update(bounds);
+			//overlay.Update(bounds);
 		}
 	}
 }
