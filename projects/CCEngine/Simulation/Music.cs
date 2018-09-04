@@ -8,16 +8,20 @@ namespace CCEngine.Simulation
 		private string name;
 		private int duration;
 		private string scoreid;
+		private bool normal;
 
 		public string Name { get => name; }
 
 		public int Duration { get => duration; }
 
-		public Music(string name, int duration, string scoreid)
+		public bool Normal { get => normal; }
+
+		public Music(string name, int duration, string scoreid, bool normal)
 		{
 			this.name = name;
 			this.duration = duration;
 			this.scoreid = scoreid;
+			this.normal = normal;
 		}
 
 		public BaseAudioStream GetStream()

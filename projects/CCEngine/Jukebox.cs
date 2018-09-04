@@ -22,15 +22,23 @@ namespace CCEngine
 				var scoreid = kv.Value;
 				var name = cfg.GetString(scoreid, "Name");
 				var duration = cfg.GetInt(scoreid, "Duration");
-				this.themes.Add(new Music(name, duration, scoreid));
+				var normal = cfg.GetBool(scoreid, "Normal");
+				this.themes.Add(new Music(name, duration, scoreid, normal));
 			}
 		}
 
 		public void PlayRandom()
 		{
 			var rng = new Random();
-			var mus = themes[rng.Next(themes.Count)];
-			device.PlayMusic(mus);
+			while(true)
+			{
+				var mus = themes[rng.Next(themes.Count)];
+				if(mus.Normal)
+				{
+					device.PlayMusic(mus);
+					break;
+				}
+			}
 		}
 	}
 }
