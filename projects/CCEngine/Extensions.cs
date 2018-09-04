@@ -68,12 +68,11 @@ namespace CCEngine
 			return def;
 		}
 
-		public static IList<T> Swap<T>(this IList<T> list, int idx0, int idx1)
+		public static void Swap<T>(this IList<T> list, int idx0, int idx1)
 		{
 			T tmp = list[idx0];
 			list[idx0] = list[idx1];
 			list[idx1] = tmp;
-			return list;
 		}
 	}
 }
