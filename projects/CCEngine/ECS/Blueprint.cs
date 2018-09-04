@@ -1,18 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CCEngine.ECS
 {
-	public interface IBlueprint
-	{
-		IAttributeTable Configuration { get; }
-		IEnumerable<Type> ComponentTypes { get; }
-	}
-
-	public class Blueprint : IBlueprint
+	public class Blueprint
 	{
 		private IAttributeTable config;
 		private Type[] componentTypes;

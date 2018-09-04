@@ -36,7 +36,7 @@ namespace CCEngine.ECS
 		{
 			object value;
 			if (!attrs.TryGetValue(name, out value))
-				throw new NotFound("Attribute [{0}] Not Found".F(name));
+				throw new ArgumentException("Attribute [{0}] Not Found".F(name));
 			return (T)value;
 		}
 
@@ -89,7 +89,7 @@ namespace CCEngine.ECS
 		{
 			var config = tables.FirstOrDefault(x => x.Contains(name));
 			if (config == null)
-				throw new NotFound("Attribute [{0}] Not Found".F(name));
+				throw new ArgumentException("Attribute [{0}] Not Found".F(name));
 			return config.Get<T>(name);
 		}
 

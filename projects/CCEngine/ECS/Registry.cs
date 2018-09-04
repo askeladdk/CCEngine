@@ -1,305 +1,332 @@
-﻿using System;
+using System;
+using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
+using CCEngine.Collections;
 
 namespace CCEngine.ECS
 {
-	using Entity = Dictionary<Type, IComponent>;
-	using ReadOnlyEntity = IReadOnlyDictionary<Type, IComponent>;
-
-	/// <summary>
-	/// Component interface.
-	/// </summary>
-	public interface IComponent
+	public interface IComponent<T>
 	{
-		void Initialise(IAttributeTable table);
 	}
 
-	/// <summary>
-	/// Entity filter interface.
-	/// </summary>
-	public interface IFilter : IDisposable
+	public class ComponentManager
 	{
-		IFilter All(params Type[] signature);
-		IFilter One(params Type[] signature);
-		IFilter None(params Type[] signature);
-		IEnumerable<int> Entities { get; }
-	}
+		private Dictionary<Type, IDictionary> components =
+			new Dictionary<Type, IDictionary>();
+		private int capacity;
 
-	/// <summary>
-	/// Entity-Component Registry.
-	/// </summary>
-	public class Registry
-	{
-		private class RegistryFilter : IFilter
+		public ComponentManager(int capacity)
 		{
-			private Type[] all, one, none;
-			private HashSet<int> entities = new HashSet<int>();
-			private Registry registry;
-			private bool evaluated = false;
-
-			public RegistryFilter(Registry registry)
-			{
-				this.registry = registry;
-				registry.OnEntityKilled += this.OnEntityKilled;
-				registry.OnEntitySpawned += this.OnEntitySpawned;
-				registry.OnEntityUpdated += this.OnEntityUpdated;
-			}
-
-			public void Dispose()
-			{
-				registry.OnEntityKilled -= this.OnEntityKilled;
-				registry.OnEntitySpawned -= this.OnEntitySpawned;
-				registry.OnEntityUpdated -= this.OnEntityUpdated;
-				entities.Clear();
-			}
-
-			private void Evaluate()
-			{
-				if(!evaluated)
-					foreach (var entityId in registry.Entities)
-						if (!entities.Contains(entityId) && Match(registry, entityId))
-							entities.Add(entityId);
-				evaluated = true;
-			}
-
-			private bool Match(Registry registry, int entityId)
-			{
-				var entity = registry.GetComponents(entityId);
-				var matches = true;
-				if (all != null)
-					matches = matches && all.All(x => entity.ContainsKey(x));
-				if (one != null)
-					matches = matches && one.Any(x => entity.ContainsKey(x));
-				if (none != null)
-					matches = matches && !none.Any(x => entity.ContainsKey(x));
-				return matches;
-			}
-
-			public void OnEntitySpawned(Registry registry, int entityId)
-			{
-				if (registry.IsAlive(entityId) && Match(registry, entityId))
-					entities.Add(entityId);
-			}
-
-			public void OnEntityUpdated(Registry registry, int entityId)
-			{
-				var match = registry.IsAlive(entityId) && Match(registry, entityId);
-				if (match)
-					entities.Add(entityId);
-				else
-					entities.Remove(entityId);
-			}
-
-			public void OnEntityKilled(Registry registry, int entityId)
-			{
-				entities.Remove(entityId);
-			}
-
-			public IEnumerable<int> Entities
-			{
-				get
-				{
-					Evaluate();
-					return entities;
-				}
-			}
-
-			public IFilter All(params Type[] signature)
-			{
-				this.all = signature;
-				return this;
-			}
-
-			public IFilter One(params Type[] signature)
-			{
-				this.one = signature;
-				return this;
-			}
-
-			public IFilter None(params Type[] signature)
-			{
-				this.none = signature;
-				return this;
-			}
+			this.capacity = capacity;
 		}
 
-		private Dictionary<int, Entity> entities =
-			new Dictionary<int, Entity>();
-		private Queue<int> killQueue =
-			new Queue<int>();
-		private List<Processor> processors =
-			new List<Processor>();
-		private int idCounter = 0;
-
-		// Events.
-		public event Action<Registry, int> OnEntitySpawned;
-		public event Action<Registry, int> OnEntityUpdated;
-		public event Action<Registry, int> OnEntityKilled;
-
-		private IComponent CreateComponent(Type type, IAttributeTable table)
+		public void Clear()
 		{
-			IComponent component = (IComponent)Activator.CreateInstance(type);
-			component.Initialise(table);
-			return component;
+			foreach(var kv in components)
+				kv.Value.Clear();
 		}
 
-		private Entity GetComponentsMutable(int entityId)
+		public void RegisterType<T>()
+			where T:IComponent<T>
 		{
-			Entity entity;
-			entities.TryGetValue(entityId, out entity);
-			return entity;
+			components.Add(typeof(T), new PackedArray<T>(capacity));
 		}
 
-		protected ReadOnlyEntity GetComponents(int entityId)
+		private IDictionary Components(Type t)
 		{
-			return GetComponentsMutable(entityId);
+			return components[t];
 		}
 
-		public bool TryGetComponent<TComponent>(int entityId, out TComponent component)
-			where TComponent : IComponent
+		private IDictionary<int, T> Components<T>()
+			where T:IComponent<T>
 		{
-			var components = GetComponents(entityId);
-			var success = false;
-			IComponent c = null;
-			if (components != null)
-				success = components.TryGetValue(typeof(TComponent), out c);
-			component = (TComponent)c;
-			return success;
+			return (IDictionary<int, T>)components[typeof(T)];
 		}
 
-		public TComponent GetComponent<TComponent>(int entityId)
-			where TComponent : IComponent
+		public bool Attach<T>(int eid, T component)
+			where T:IComponent<T>
 		{
-			TComponent component;
-			if (!TryGetComponent<TComponent>(entityId, out component))
-				throw new NotFound("Component [{0}.{1}] Not Found".F(entityId, typeof(TComponent).Name));
-			return component;
-		}
-
-		public TComponent AddComponent<TComponent>(int entityId, IAttributeTable attrTable)
-			where TComponent : IComponent
-		{
-			var entity = GetComponentsMutable(entityId);
-			var type = typeof(TComponent);
-			IComponent c;
-			if (entity == null)
-				return default(TComponent);
-			else if (entity.TryGetValue(type, out c))
-				return (TComponent)c;
-			c = CreateComponent(type, attrTable);
-			c.Initialise(attrTable);
-			entity[type] = c;
-			OnEntityUpdated.Invoke(this, entityId);
-			return (TComponent)c;
-		}
-
-		public bool RemoveComponent<TComponent>(int entityId)
-			where TComponent : IComponent
-		{
-			var entity = GetComponentsMutable(entityId);
-			var type = typeof(TComponent);
-			if (entity == null)
-				return true;
-			else if (!entity.ContainsKey(type))
-				return false;
-			entity.Remove(type);
-			OnEntityUpdated.Invoke(this, entityId);
+			Components<T>()[eid] = component;
 			return true;
 		}
 
-		private int Spawn(Entity entity)
+		public bool Attach(Type t, int eid, object component)
 		{
-			var entityId = ++idCounter;
-			entities[entityId] = entity;
-			OnEntitySpawned.Invoke(this, entityId);
-			return entityId;
+			Components(t)[eid] = component;
+			return true;
 		}
 
-		public int Spawn()
+		public bool Detach<T>(int eid)
+			where T:IComponent<T>
 		{
-			return Spawn(new Entity());
+			return Components<T>().Remove(eid);
 		}
 
-		public int Spawn(IBlueprint bluePrint, IAttributeTable attrTable)
+		public bool TryGet<T>(int eid, out T component)
+			where T:IComponent<T>
 		{
-			var table = new AttributeTableList
+			return Components<T>().TryGetValue(eid, out component);
+		}
+	}
+
+	public class EntityManager
+	{
+		private const uint EID_MASK = 0x00FFFFFF;
+		private const uint GEN_MASK = 0xFF000000;
+		private const int GEN_SHIFT = 24;
+
+		private byte[] generations;
+		private PackedArray<ulong> entities;
+		private RingBuffer<int> available;
+
+		public int Capacity { get => entities.Capacity; }
+
+		public EntityManager(int capacity)
+		{
+			this.generations = new byte[capacity];
+			this.entities = new PackedArray<ulong>(capacity);
+			this.available = new RingBuffer<int>(capacity);
+			for(var i = 0; i < capacity; i++)
+				this.available.Enqueue(i);
+		}
+
+		/// Check if entity is alive.
+		public bool IsAlive(Entity entity)
+		{
+			return generations[entity.ID] == entity.Generation;
+		}
+
+		/// Create a new entity.
+		public bool Create(out Entity entity, ulong tag = 0)
+		{
+			if(available.Count == 0)
 			{
-				attrTable,
-				bluePrint.Configuration
-			};
-			var entity = bluePrint.ComponentTypes.ToDictionary(
-				x => x,
-				x =>
-				{
-					var c = CreateComponent(x, table);
-					c.Initialise(table);
-					return c;
-				}
-			);
-			return Spawn(entity);
+				entity = Entity.Invalid;
+				return false;
+			}
+			var eid = available.Dequeue();
+			var gen = generations[eid];
+			entity = Entity.Create(eid, gen);
+			entities[eid] = tag;
+			return true;
 		}
 
-		public bool IsAlive(int entityId)
+		public bool Destroy(Entity entity)
 		{
-			return entities.ContainsKey(entityId);
+			var eid = entity.ID;
+			if(!IsAlive(entity))
+				return false;
+			generations[eid] += 1;
+			entities.Remove(eid);
+			available.Enqueue(eid);
+			return true;
 		}
 
-		public void Kill(int entityId)
+		public ulong Tag(Entity entity)
+		{
+			if(IsAlive(entity))
+				return entities[entity.ID];
+			throw new Exception("Invalid entity.");
+		}
+
+		public bool Tag(Entity entity, ulong tag)
+		{
+			var eid = entity.ID;
+			if(!IsAlive(entity))
+				return false;
+			entities[eid] |= tag;
+			return true;
+		}
+
+		public bool Untag(Entity entity, ulong tag)
+		{
+			var eid = entity.ID;
+			if(!IsAlive(entity))
+				return false;
+			entities[eid] &= ~tag;
+			return true;
+		}
+
+		public void Clear()
+		{
+			entities.Clear();
+			available.Clear();
+			for(var i = 0; i < entities.Capacity; i++)
+				this.available.Enqueue(i);
+			for(var i = 0; i < generations.Length; i++)
+				generations[i] = 0;
+		}
+
+		public IEnumerable<Entity> View()
+		{
+			IReadOnlyDictionary<int, ulong> ro = entities;
+			foreach(var eid in ro.Keys)
+				yield return Entity.Create(eid, generations[eid]);
+		}
+
+		public IEnumerable<Entity> View(ulong mask)
+		{
+			IReadOnlyDictionary<int, ulong> ro = entities;
+			foreach(var kv in ro)
+			{
+				var eid = kv.Key;
+				if((kv.Value & mask) == mask)
+					yield return Entity.Create(eid, generations[eid]);
+			}
+		}
+
+		public void CopyTo(EntityManager that)
+		{
+			this.entities.CopyTo(that.entities);
+			this.available.CopyTo(that.available);
+			Array.Copy(this.generations, that.generations, this.generations.Length);
+		}
+	}
+
+	public class Registry
+	{
+		private EntityManager entities;
+		private ComponentManager components;
+		private Dictionary<Type, int> types = new Dictionary<Type, int>();
+
+		public Registry(int capacity)
+		{
+			this.entities = new EntityManager(capacity);
+			this.components = new ComponentManager(capacity);
+		}
+
+		public void RegisterType<T>()
+			where T:IComponent<T>
+		{
+			components.RegisterType<T>();
+			types.Add(typeof(T), types.Count);
+		}
+
+		public void Clear()
+		{
+			entities.Clear();
+			components.Clear();
+		}
+
+		private ulong TypeMask(Type t)
+		{
+			return 1U << types[t];
+		}
+
+		private ulong TypeMask<T>()
+			where T:IComponent<T>
+		{
+			return TypeMask(typeof(T));
+		}
+
+		public bool Has<T>(Entity entity)
+			where T:IComponent<T>
+		{
+			return (entities.Tag(entity) & TypeMask<T>()) != 0;
+		}
+
+		public bool TryGet<T>(Entity entity, out T component)
+			where T:IComponent<T>
+		{
+			return components.TryGet<T>(entity.ID, out component);
+		}
+
+		public T Get<T>(Entity entity)
+			where T:IComponent<T>
+		{
+			T component;
+			if(!TryGet<T>(entity, out component))
+				throw new ArgumentException("Component type not found.");
+			return component;
+		}
+
+		public bool IsAlive(Entity entity)
+		{
+			return entities.IsAlive(entity);
+		}
+
+		public Entity Create()
 		{
 			Entity entity;
-			if (entities.TryGetValue(entityId, out entity))
-				killQueue.Enqueue(entityId);
+			if(!entities.Create(out entity))
+				throw new ArgumentException("No entities available.");
+			return entity;
 		}
 
-		public void AddProcessor(Processor processor)
+		public bool Destroy(Entity entity)
 		{
-			processors.Add(processor);
+			return entities.Destroy(entity);
 		}
 
-		public void RemoveProcessor(Processor processor)
+		public bool Attach(Type t, Entity entity, object component)
 		{
-			processors.Remove(processor);
+			var typeMask = TypeMask(t);
+			if(!entities.Tag(entity, typeMask))
+				return false;
+			return components.Attach(t, entity.ID, component);			
 		}
 
-		public void Update(object e)
+		public bool Attach<T>(Entity entity, T component)
+			where T:IComponent<T>
 		{
-			while (killQueue.Count > 0)
-			{
-				var entityId = killQueue.Dequeue();
-				if (entities.ContainsKey(entityId))
-				{
-					OnEntityKilled.Invoke(this, entityId);
-					entities.Remove(entityId);
-				}
-			}
-
-			foreach (var p in processors)
-				if (p.IsActive && !p.IsRenderLoop)
-					p.Process(e);
+			return Attach(typeof(T), entity, component);
 		}
 
-		public void Render(object e)
+		public bool Detach<T>(Entity entity)
+			where T:IComponent<T>
 		{
-			foreach (var p in processors)
-				if (p.IsActive && p.IsRenderLoop)
-					p.Process(e);
+			var typeMask = TypeMask<T>();
+			if(!entities.Untag(entity, typeMask))
+				return false;
+			return components.Detach<T>(entity.ID);
 		}
 
-		public IEnumerable<int> Entities
+		public IEnumerable<Entity> View()
 		{
-			get { return entities.Keys.AsEnumerable(); }
+			return entities.View();
+		}
+  
+		public IEnumerable<Entity> View<T>()
+			where T:IComponent<T>
+		{
+			return entities.View(TypeMask<T>());
 		}
 
-		public IFilter Filter
+		public IEnumerable<Entity> View<T0, T1>()
+			where T0:IComponent<T0>
+			where T1:IComponent<T1>
 		{
-			get
-			{
-				var filter = new RegistryFilter(this);
-				return filter;
-			}
+			var mask = 0
+				| TypeMask<T0>()
+				| TypeMask<T1>();
+			return entities.View(mask);
+		}
+
+		public IEnumerable<Entity> View<T0, T1, T2>()
+			where T0:IComponent<T0>
+			where T1:IComponent<T1>
+			where T2:IComponent<T2>
+		{
+			var mask = 0
+				| TypeMask<T0>()
+				| TypeMask<T1>()
+				| TypeMask<T2>();
+			return entities.View(mask);
+		}
+
+		public IEnumerable<Entity> View<T0, T1, T2, T3>()
+			where T0:IComponent<T0>
+			where T1:IComponent<T1>
+			where T2:IComponent<T2>
+			where T3:IComponent<T3>
+		{
+			var mask = 0
+				| TypeMask<T0>()
+				| TypeMask<T1>()
+				| TypeMask<T2>()
+				| TypeMask<T3>();
+			return entities.View(mask);
 		}
 	}
 }
