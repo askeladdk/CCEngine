@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CCEngine.Collections;
 using CCEngine.FileFormats;
 using CCEngine.Rendering;
 using CCEngine.ECS;
@@ -9,23 +10,35 @@ namespace CCEngine.Simulation
 {
 	public class ObjectStore
 	{
-		private Dictionary<string, Theater> theaters;
-		private Dictionary<string, Sequence> sequences;
-		private Dictionary<string, Foundation> foundations;
-		private Dictionary<string, StructureGrid> grids;
-		private Dictionary<string, Blueprint> technoTypes;
-		private Land[] lands;
+		private OrderedDictionary<string, Theater> theaters =
+			new OrderedDictionary<string, Theater>();
+		private OrderedDictionary<string, Sequence> sequences =
+			new OrderedDictionary<string, Sequence>();
+		private OrderedDictionary<string, Foundation> foundations =
+			new OrderedDictionary<string, Foundation>();
+		private OrderedDictionary<string, StructureGrid> grids =
+			new OrderedDictionary<string, StructureGrid>();
+		private OrderedDictionary<string, Blueprint> vehicleTypes =
+			new OrderedDictionary<string, Blueprint>();
+		private OrderedDictionary<string, House> houses =
+			new OrderedDictionary<string, House>();
+		private OrderedDictionary<string, Side> sides =
+			new OrderedDictionary<string, Side>();
+		private Land[] lands = new Land[Land.Lands.Count];
 
-		private IConfiguration artcfg;
+		private AssetManager assetManager;
 
-		public ObjectStore(IConfiguration artcfg)
+		public AssetManager AssetManager { get => assetManager; }
+
+		private T Load<T>(string filename, bool cache=true, object parameters=null) where T:class
 		{
-			var g = Game.Instance;
-			this.artcfg = artcfg;
-			this.sequences = LoadSequences(artcfg);
-			this.foundations = LoadFoundations(artcfg);
-			this.grids = LoadGrids(artcfg);
-			this.theaters = LoadTheaters();
+			return assetManager.Load<T>(filename, cache, parameters);
+		}
+
+		public ObjectStore(AssetManager assetManager)
+		{
+			this.assetManager = assetManager;
+			LoadInitialTypes();
 		}
 
 		public Theater GetTheater(string id)
@@ -53,26 +66,50 @@ namespace CCEngine.Simulation
 			return foundations[id];
 		}
 
-		public Blueprint GetTechnoType(string id)
+		public Blueprint GetUnitType(string id)
 		{
-			return technoTypes[id];
+			return vehicleTypes[id];
 		}
 
+		public IEnumerable<House> Houses
+		{
+			get => houses.Values;
+		}
+
+		/// Base types and type lists are loaded once on startup.
+		private void LoadInitialTypes()
+		{
+			var rules = Load<IniFile>("rules.ini");
+			var art = Load<IniFile>("art.ini");
+
+			foreach(var kv in rules.Enumerate("Houses"))
+				houses[kv.Value] = new House(kv.Value, rules);
+			foreach(var kv in rules.Enumerate("Sides"))
+				sides[kv.Key] = new Side(kv.Key, kv.Value.Split(","), houses);
+			foreach(var kv in Land.Lands)
+				lands[(int)kv.Key] = new Land(rules, kv.Value, kv.Key);
+			foreach(var kv in rules.Enumerate("VehicleTypes"))
+				vehicleTypes[kv.Value] = null;
+
+			LoadSequences(art);
+			LoadFoundations(art);
+			LoadGrids(art);
+			LoadTheaters();
+		}
+
+		/// Load types that can change from scenario to scenario.
 		public void LoadRules(IConfiguration rules)
 		{
-			lands = LoadLands(rules);
-			technoTypes = new Dictionary<string, Blueprint>();
-			LoadUnitTypes(technoTypes, rules, artcfg);
+			var art = Load<IniFile>("art.ini");
+			LoadVehicleTypes(rules, art);
 		}
 
-		private static void LoadUnitTypes(Dictionary<string, Blueprint> technoTypes,
-			IConfiguration rules, IConfiguration art)
+		private void LoadVehicleTypes(IConfiguration rules, IConfiguration art)
 		{
-			foreach(var kv in rules.Enumerate("VehicleTypes"))
+			foreach(var id in vehicleTypes.Keys)
 			{
-				var id = kv.Value;
 				if(!rules.Contains(id))
-					continue;
+					throw new Exception("VehicleType {0} not found".F(id));
 
 				var artId = rules.GetString(id, "Image", id);
 				var sequenceId = art.GetString(artId, "Sequence", "DefaultSequence");
@@ -80,7 +117,8 @@ namespace CCEngine.Simulation
 
 				var config = new AttributeTable
 				{
-					{"Type", TechnoType.Vehicle},
+					{"Basic.ID", id},
+					{"Basic.Type", TechnoType.Vehicle},
 					{"Animation.Sprite", "{0}.SHP".F(artId)},
 					{"Animation.Sequence", sequenceId},
 					{"Locomotion.Speed", rules.GetInt(id, "Speed", 1)},
@@ -88,26 +126,18 @@ namespace CCEngine.Simulation
 					{"Locomotion.Locomotor", "Drive"},
 				};
 
-				technoTypes[id] = new Blueprint(config,
+				vehicleTypes[id] = new Blueprint(config,
 					typeof(CLocomotion),
 					typeof(CAnimation),
 					typeof(CRadio)
+					// typeof(Locomotor2),
+					// typeof(Pose)
 				);
 			}
 		}
 
-		private static Land[] LoadLands(IConfiguration cfg)
+		private void LoadSequences(IConfiguration cfg)
 		{
-			var lands = new Land[(int)LandType.Count];
-			foreach(var kv in Land.Lands)
-				lands[(int)kv.Key] = new Land(cfg, kv.Value, kv.Key);
-			return lands;
-		}
-
-
-		private static Dictionary<string, Sequence> LoadSequences(IConfiguration cfg)
-		{
-			var sequences = new Dictionary<string, Sequence>();
 			foreach(var kv in cfg.Enumerate("Sequences"))
 			{
 				var id = kv.Value;
@@ -119,38 +149,31 @@ namespace CCEngine.Simulation
 				}
 				sequences[id] = seq;
 			}
-			return sequences;
 		}
 
-		private static Dictionary<string, Foundation> LoadFoundations(IConfiguration cfg)
+		private void LoadFoundations(IConfiguration cfg)
 		{
-			var foundations = new Dictionary<string, Foundation>();
-
 			foreach(var kv in cfg.Enumerate("Foundations"))
 			{
 				var id = kv.Value;
 				if (cfg.Contains(id))
 					foundations[id] = new Foundation(cfg, id);;
 			}
-			return foundations;
 		}
 
-		private static Dictionary<string, StructureGrid> LoadGrids(IConfiguration cfg)
+		private void LoadGrids(IConfiguration cfg)
 		{
-			var grids = new Dictionary<string, StructureGrid>();
 			foreach(var kv in cfg.Enumerate("Grids"))
 			{
 				var id = kv.Value;
 				if (cfg.Contains(id))
 					grids[id] = new StructureGrid(cfg, id);
 			}
-			return grids;
 		}
 
 		/// Loads overlays for a theater.
-		private static Overlay[] LoadTheaterOverlays(IConfiguration cfg, string theaterext)
+		private Overlay[] LoadTheaterOverlays(IConfiguration cfg, string theaterext)
 		{
-			var g = Game.Instance;
 			var overlays = new Overlay[256];
 			foreach(var kv in cfg.Enumerate("Overlays"))
 			{
@@ -158,24 +181,23 @@ namespace CCEngine.Simulation
 				var overlayid = kv.Value;
 				var type = cfg.GetString(overlayid, "Type");
 				var ext = cfg.GetBool(overlayid, "Theater") ? theaterext : "SHP";
-				var art = g.LoadAsset<Sprite>("{0}.{1}".F(overlayid, ext));
+				var art = Load<Sprite>("{0}.{1}".F(overlayid, ext));
 				overlays[idx] = new Overlay(type, art);
 			}
 			return overlays;
 		}
 
 		/// Read terrains for theater.
-		private static Dictionary<string, Blueprint> LoadTheaterTerrains(
+		private Dictionary<string, Blueprint> LoadTheaterTerrains(
 			IConfiguration cfg, string theaterext)
 		{
-			var g = Game.Instance;
 			var terrains = new Dictionary<string, Blueprint>();
 
 			foreach(var kv in cfg.Enumerate("Terrains"))
 			{
 				var id = kv.Value;
 				var spriteId = "{0}.{1}".F(id, theaterext);
-				var spr = g.LoadAsset<Sprite>(spriteId);
+				var spr = Load<Sprite>(spriteId);
 
 				if(spr == null)
 					continue;
@@ -187,7 +209,8 @@ namespace CCEngine.Simulation
 
 				var config = new AttributeTable
 				{
-					{"Type", TechnoType.Terrain},
+					{"Basic.ID", id},
+					{"Basic.Type", TechnoType.Terrain},
 					{"Animation.Sprite", spriteId},
 					{"Animation.Sequence", seqId},
 					{"Animation.DrawOffsetX", (spr.Size.Width - Constants.TileSize) / 2},
@@ -202,6 +225,9 @@ namespace CCEngine.Simulation
 					typeof(CLocomotion),
 					typeof(CAnimation),
 					typeof(CPlacement)
+					// typeof(Locomotor2),
+					// typeof(Pose),
+					// typeof(Placement)
 				);
 			}
 
@@ -210,13 +236,11 @@ namespace CCEngine.Simulation
 
 		/// Read theaters.ini into memory.
 		/// This only needs to be done once.
-		private static Dictionary<string, Theater> LoadTheaters()
+		private void LoadTheaters()
 		{
-			var g = Game.Instance;
-			var theatercfg = g.LoadAsset<IniFile>("theaters.ini", false);
-			var overlaycfg = g.LoadAsset<IniFile>("overlays.ini", false);
-			var terraincfg = g.LoadAsset<IniFile>("terrains.ini", false);
-			var theaters = new Dictionary<string, Theater>();
+			var theatercfg = Load<IniFile>("theaters.ini", false);
+			var overlaycfg = Load<IniFile>("overlays.ini", false);
+			var terraincfg = Load<IniFile>("terrains.ini", false);
 
 			// List all possible templates.
 			var tmplist = theatercfg
@@ -228,7 +252,7 @@ namespace CCEngine.Simulation
 				.ToArray();
 
 			// Needed to make the theater palettes remappable.
-			var palette_cps = g.LoadAsset<BinFile>("PALETTE.CPS", false);
+			var palette_cps = Load<BinFile>("PALETTE.CPS", false);
 
 			foreach (var entry in theatercfg.Enumerate("Theaters"))
 			{
@@ -239,7 +263,7 @@ namespace CCEngine.Simulation
 				var templates = new TmpFile[1024];
 
 				// Every theater has its own palette.
-				var palette = g.LoadAsset<Palette>("{0}.PAL".F(palname), false, new PaletteParameters{
+				var palette = Load<Palette>("{0}.PAL".F(palname), false, new PaletteParameters{
 					shift=2,
 					hasShadow=true,
 					cycles=true,
@@ -250,7 +274,7 @@ namespace CCEngine.Simulation
 				// There may be gaps because not every template is available for every theater.
 				foreach (var kv2 in tmplist)
 				{
-					var tmp = g.LoadAsset<TmpFile>("{0}.{1}".F(kv2.Value, extension), false);
+					var tmp = Load<TmpFile>("{0}.{1}".F(kv2.Value, extension), false);
 					if (tmp != null)
 						templates[kv2.Key] = tmp;
 				}
@@ -260,9 +284,6 @@ namespace CCEngine.Simulation
 
 				theaters[id] = new Theater(name, extension, palette, templates, overlays, terrains);
 			}
-
-			return theaters;
 		}
-
 	}
 }

@@ -46,6 +46,7 @@ namespace CCEngine
 		public int GlobalClock { get => this.globalClock; }
 		public World World { get => this.world; }
 		public ObjectStore ObjectStore { get => this.objectStore; }
+		public AssetManager AssetManager { get => assets; }
 
 		public VFS.VFS VFS { get => this.vfs; }
 		public Renderer Renderer { get => this.renderer; }
@@ -102,8 +103,7 @@ namespace CCEngine
 			this.InitialiseGUI();
 			this.jukebox = new Jukebox(this.audio, LoadAsset<IniFile>("scores.ini", false));
 
-			var artcfg = LoadAsset<IniFile>("art.ini", false);
-			this.objectStore = new ObjectStore(artcfg);
+			this.objectStore = new ObjectStore(this.assets);
 			this.world = new World(objectStore);
 		}
 
