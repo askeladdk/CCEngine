@@ -76,7 +76,7 @@ namespace CCEngine
 
 		public static bool operator==(XPos lhs, XPos rhs)
 		{
-			return lhs.x == rhs.x && lhs.y != rhs.y;
+			return lhs.x == rhs.x && lhs.y == rhs.y;
 		}
 
 		public static bool operator!=(XPos lhs, XPos rhs)
