@@ -43,9 +43,10 @@ namespace CCEngine.Algorithms
 			costSoFar[start] = 0;
 			frontier.Enqueue(ManhattanDistance(goal, start), start);
 
-			CPos current;
-			while (frontier.TryDequeue(out current))
+			KeyValuePair<int, CPos> curkv;
+			while (frontier.TryDequeue(out curkv))
 			{
+				var current = curkv.Value;
 				// Path found.
 				if (current == goal)
 				{

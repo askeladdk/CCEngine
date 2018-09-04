@@ -61,34 +61,47 @@ namespace CCEngine.Collections
 			get { return heap.Count; }
 		}
 
-		public TValue Peek()
+		public bool TryPeek(out KeyValuePair<TKey, TValue> kv)
 		{
-			if (this.Count == 0)
-				throw new InvalidOperationException("PriorityQueue is empty");
-			return heap[0].Value;
+			var ok = (this.Count > 0);
+			kv = ok ? heap[0] : default(KeyValuePair<TKey, TValue>);
+			return ok;
 		}
 
-		public void Enqueue(TKey priority, TValue value)
+		public KeyValuePair<TKey, TValue> Peek()
 		{
-			heap.Add(new KeyValuePair<TKey, TValue>(priority, value));
+			KeyValuePair<TKey, TValue> kv;
+			if(!TryPeek(out kv))
+				throw new InvalidOperationException("PriorityQueue is empty");
+			return kv;
+		}
+
+		public void Enqueue(KeyValuePair<TKey, TValue> kv)
+		{
+			heap.Add(kv);
 			var last = this.Count - 1;
 			BubbleUp(last);
 		}
 
-		public TValue Dequeue()
+		public void Enqueue(TKey priority, TValue value)
 		{
-			var value = Peek();
+			Enqueue(KeyValuePair.Create(priority, value));
+		}
+
+		public KeyValuePair<TKey, TValue> Dequeue()
+		{
+			var kv = Peek();
 			var last = this.Count - 1;
 			heap[0] = heap[last];
 			heap.RemoveAt(last);
 			BubbleDown(0);
-			return value;
+			return kv;
 		}
 
-		public bool TryDequeue(out TValue value)
+		public bool TryDequeue(out KeyValuePair<TKey, TValue> kv)
 		{
 			var ok = this.Count > 0;
-			value = ok ? Dequeue() : default(TValue);
+			kv = ok ? Dequeue() : default(KeyValuePair<TKey, TValue>);
 			return ok;
 		}
 
