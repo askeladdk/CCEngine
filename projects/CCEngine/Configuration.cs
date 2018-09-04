@@ -60,7 +60,7 @@ namespace CCEngine
 		{
 			var s = GetString(section, key);
 			if (s == null)
-				return null;
+				return new string[0];
 			return s.Split(',');
 		}
 
