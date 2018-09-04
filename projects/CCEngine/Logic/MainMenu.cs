@@ -11,6 +11,7 @@ using CCEngine.Rendering;
 using CCEngine.Simulation;
 using CCEngine.Algorithms;
 using CCEngine.GUI;
+using CCEngine.ECS;
 
 namespace CCEngine.Logic
 {
@@ -66,7 +67,7 @@ namespace CCEngine.Logic
 
 			if(e.Interaction == Interaction.Enter)
 			{
-				g.SendMessage(new MissionMove(28, g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos));
+				g.SendMessage(new MissionMove(Entity.Create(28, 0), g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos));
 			}
 		}
 
