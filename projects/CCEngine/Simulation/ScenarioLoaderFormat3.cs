@@ -62,7 +62,7 @@ namespace CCEngine.Simulation
 				var data = kv.Value.Split(',');
 				if (data.Length < 7)
 					continue;
-				var country = data[0];
+				var house = data[0];
 				var technoId = data[1];
 				var health = int.Parse(data[2]);
 				var cell = new CPos(ushort.Parse(data[3]));
@@ -70,7 +70,7 @@ namespace CCEngine.Simulation
 				var mission = data[5];
 				var triggerId = data[6];
 				units.Add(new ScenarioUnit{
-					country = country,
+					house = house,
 					technoId = technoId,
 					health = health,
 					cell = cell,
@@ -104,7 +104,7 @@ namespace CCEngine.Simulation
 				var data = kv.Value.Split(',');
 				if (data.Length < 8)
 					continue;
-				var country = data[0];
+				var house = data[0];
 				var technoId = data[1];
 				var health = int.Parse(data[2]);
 				var cell = new CPos(ushort.Parse(data[3]));
@@ -113,7 +113,7 @@ namespace CCEngine.Simulation
 				var facing = new BinaryAngle(int.Parse(data[6]));
 				var triggerId = data[7];
 				units.Add(new ScenarioUnit{
-					country = country,
+					house = house,
 					technoId = technoId,
 					health = health,
 					cell = cell,

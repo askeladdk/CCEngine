@@ -28,7 +28,7 @@ namespace CCEngine.Simulation
 
 	public class ScenarioUnit
 	{
-		public string country;
+		public string house;
 		public string technoId;
 		public int health;
 		public CPos cell;
