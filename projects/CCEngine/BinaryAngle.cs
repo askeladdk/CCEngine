@@ -102,5 +102,11 @@ namespace CCEngine
 		{
 			return lhs.angle != rhs.angle;
 		}
+
+		public static BinaryAngle Lerp(float alpha, BinaryAngle a0, BinaryAngle a1)
+		{
+			var da = a0.angle - a1.angle;
+			return new BinaryAngle(a0.angle + (int)(alpha * da));
+		}
 	}
 }

@@ -83,5 +83,23 @@ namespace CCEngine
 		{
 			return lhs.x != rhs.x || lhs.y != rhs.y;
 		}
+
+		public static float Distance(XPos x0, XPos x1)
+		{
+			var dx = x1.X - x0.X;
+			var dy = x1.Y - x0.Y;
+			return MathF.Sqrt(dx * dx + dy * dy);
+		}
+
+		public static XPos Lerp(float alpha, XPos p0, XPos p1)
+		{
+			var dx = p1.X - p0.X;
+			var dy = p1.Y - p0.Y;
+			return new XPos(
+				0, 0,
+				p0.X + (int)(dx * alpha),
+				p0.Y + (int)(dy * alpha)
+			);
+		}
 	}
 }
