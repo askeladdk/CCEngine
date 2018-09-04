@@ -10,8 +10,8 @@ namespace CCEngine.Collections
 	public class RingBuffer : Stream
 	{
 		private byte[] buffer;
-		private uint head;
-		private uint tail;
+		private int head;
+		private int tail;
 
 		public int Capacity { get => buffer.Length; }
 
@@ -41,15 +41,15 @@ namespace CCEngine.Collections
 
 			while(ncopied < count)
 			{
-				var mhead = (int)(head & (Capacity - 1));
+				var mhead = head & (Capacity - 1);
 				var num = Math.Min(Capacity - mhead, count - ncopied);
 				Buffer.BlockCopy(data, offset + ncopied, buffer, mhead, num);
 				ncopied += num;
-				head += (uint)num;
+				head += num;
 			}
 
 			if(overflow)
-				tail = head - (uint)Capacity;
+				tail = head - Capacity;
 		}
 
 		public override int Read(byte[] data, int offset, int count)
@@ -62,7 +62,7 @@ namespace CCEngine.Collections
 				var num = Math.Min(Capacity - mtail, count - ncopied);
 				Buffer.BlockCopy(buffer, mtail, data, offset + ncopied, num);
 				ncopied += num;
-				tail += (uint)num;
+				tail += num;
 			}
 			return count;
 		}
