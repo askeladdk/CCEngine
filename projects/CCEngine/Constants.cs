@@ -30,5 +30,8 @@ namespace CCEngine
 
 		/// Width of the HUD sidebar in pixels.
 		public const int HUDSideBarWidth = 160;
+
+		/// Maximum number of entities that can be active at any given moment.
+		public const int MaxEntities = 1024;
 	}
 }

@@ -9,7 +9,7 @@ using CCEngine.ECS;
 
 namespace CCEngine.Simulation
 {
-	public class Map : IGrid<MovementZone>
+	public class Map : IGrid<SpeedType>
 	{
 		private ObjectStore objectStore;
 		private Rectangle bounds;
@@ -109,7 +109,7 @@ namespace CCEngine.Simulation
 			this.grid.Clear(cell);
 		}
 
-		public bool IsPassable(CPos cell, MovementZone mz)
+		public bool IsPassable(CPos cell, SpeedType mz)
 		{
 			var land = objectStore.GetLand(GetLandType(cell));
 			return land.IsPassable(mz) && grid.IsPassable(cell);
@@ -127,7 +127,7 @@ namespace CCEngine.Simulation
 			(-1, -1, 14),
 		};
 
-		IEnumerable<(CPos, int)> IGrid<MovementZone>.GetPassableNeighbors(MovementZone mz, CPos cpos)
+		IEnumerable<(CPos, int)> IGrid<SpeedType>.GetPassableNeighbors(SpeedType mz, CPos cpos)
 		{
 			foreach(var offset in cellOffsets)
 			{
@@ -137,7 +137,7 @@ namespace CCEngine.Simulation
 			}
 		}
 
-		Land IGrid<MovementZone>.GetLandAt(CPos cell)
+		Land IGrid<SpeedType>.GetLandAt(CPos cell)
 		{
 			return objectStore.GetLand(GetLandType(cell));
 		}

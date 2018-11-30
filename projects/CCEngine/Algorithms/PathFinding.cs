@@ -83,7 +83,9 @@ namespace CCEngine.Algorithms
 	{
 		bool IsDestination(CPos pos);
 		bool TryGetDirection(CPos pos, out CardinalDirection dir);
+		bool TryGetNextCell(CPos pos, out CardinalDirection dir, out CPos next);
 		Land GetLandAt(CPos cpos);
+		int SpeedAt(CPos cpos, SpeedType speedType, int speed);
 	}
 
 	public class SingularFlowField<PathConstraints> : IFlowField
@@ -130,9 +132,27 @@ namespace CCEngine.Algorithms
 			return field.TryGetValue(pos, out dir);
 		}
 
+		public bool TryGetNextCell(CPos pos, out CardinalDirection dir, out CPos next)
+		{
+			if(TryGetDirection(pos, out dir))
+			{
+				var dv = dir.ToVector();
+				next = pos.Translate(dv.X, dv.Y);
+				return true;
+			}
+
+			next = new CPos();
+			return false;
+		}
+
 		public Land GetLandAt(CPos cpos)
 		{
 			return this.grid.GetLandAt(cpos);
+		}
+
+		public int SpeedAt(CPos cpos, SpeedType speedType, int speed)
+		{
+			return this.grid.GetLandAt(cpos).Speed(speedType, speed);
 		}
 	}
 }

@@ -26,7 +26,7 @@ namespace CCEngine.VFS
 
 		public VFSHandle Resolve(string filename)
 		{
-			int i = this.files.BinarySearch(filename.ToUpper(), x => x);
+			int i = this.files.BinarySearch(filename.ToUpper());
 			if (i >= 0)
 			{
 				return new VFSHandle(Path.Combine(this.path, filename));

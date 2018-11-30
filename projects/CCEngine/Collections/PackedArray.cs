@@ -14,15 +14,21 @@ namespace CCEngine.Collections
 		, IReadOnlyDictionary<int, T>
 		, IReadOnlyList<T>
 		, ICopyable
-		, ICloneable
 	{
+		private const int MinCapacity = 8;
+
 		private T[] dense;
 		private int[] reverse;
 		private int[] sparse;
 		private int count;
 
+		public PackedArray() : this(MinCapacity)
+		{
+		}
+
 		public PackedArray(int capacity)
 		{
+			Debug.Assert(Helpers.IsPowerOfTwo(capacity));
 			dense = new T[capacity];
 			reverse = new int[capacity];
 			sparse = new int[capacity];
@@ -83,9 +89,11 @@ namespace CCEngine.Collections
 
 		public void Add(int i, T item)
 		{
-			if(i < 0 || i >= Capacity)
+			if(i < 0)
 				throw new ArgumentOutOfRangeException();
-			if(ContainsKey(i))
+			else if(i >= Capacity)
+				SizeUpTo(i);
+			else if(ContainsKey(i))
 				throw new ArgumentException();
 			var n      = count++;
 			dense[n]   = item;
@@ -108,7 +116,39 @@ namespace CCEngine.Collections
 
 		public void Clear()
 		{
+			for(int i = 0; i < dense.Length; i++)
+				dense[i] = default(T);
 			count = 0;
+		}
+
+		private void Resize(int newcap)
+		{
+			var cap = Capacity;
+			var newdense = new T[newcap];
+			var newsparse = new int[newcap];
+			var newreverse = new int[newcap];
+			Array.Copy(dense, newdense, cap);
+			Array.Copy(sparse, newsparse, cap);
+			Array.Copy(reverse, newreverse, cap);
+			dense = newdense;
+			sparse = newsparse;
+			reverse = newreverse;
+		}
+
+		private void SizeUpTo(int i)
+		{
+			var newcap = Helpers.NextPowerOfTwo(i);
+			if(newcap <= Capacity)
+				return;
+			Resize(newcap);
+		}
+
+		public void TrimExcess()
+		{
+			if(count > (Capacity / 2))
+				return;
+			var newcap = count > MinCapacity ? Helpers.NextPowerOfTwo(count) : MinCapacity;
+			Resize(newcap);
 		}
 
 		public IEnumerator<KeyValuePair<int, T>> GetEnumerator()
@@ -140,26 +180,21 @@ namespace CCEngine.Collections
 			return false;
 		}
 
-		#region ICloneable
-
-		public object Clone()
-		{
-			var that = new PackedArray<T>(Capacity);
-			this.CopyTo(that);
-			return that;
-		}
-
-		#endregion
-
 		#region ICopyable
 
 		public void CopyTo(object dst)
 		{
+			var thiscap = this.Capacity;
 			var that = (PackedArray<T>)dst;
-			Debug.Assert(this.Capacity == that.Capacity);
-			Array.Copy(this.dense, that.dense, this.Capacity);
-			Array.Copy(this.sparse, that.sparse, this.Capacity);
-			Array.Copy(this.reverse, that.reverse, this.Capacity);
+			if(that.Capacity < thiscap)
+			{
+				that.dense = new T[thiscap];
+				that.sparse = new int[thiscap];
+				that.reverse = new int[thiscap];
+			}
+			Array.Copy(this.dense, that.dense, thiscap);
+			Array.Copy(this.sparse, that.sparse, thiscap);
+			Array.Copy(this.reverse, that.reverse, thiscap);
 			that.count = this.count;
 		}
 

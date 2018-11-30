@@ -170,7 +170,7 @@ namespace CCEngine.FileFormats
 		public VFSHandle Resolve(string filename)
 		{
 			uint id = this.GetId(filename);
-			int i = this.index.BinarySearch(id, x => x.id);
+			int i = this.index.BinarySearch(0, this.index.Length, id, x => x.id, Comparer<uint>.Default);
 			if (i < 0) return null;
 			return this.handle.OpenView(filename, this.body_offset + this.index[i].offset, this.index[i].size);
 		}

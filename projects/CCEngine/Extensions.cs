@@ -33,16 +33,24 @@ namespace CCEngine
 				buf[i] = s.ReadStruct<T>();
 		}
 
-		public static int BinarySearch<T, TKey>(this IList<T> tf, TKey target, Func<T, TKey> selector)
+		public static string F(this string fmt, params object[] args)
 		{
-			int lo = 0;
-			int hi = (int)tf.Count - 1;
-			var comp = Comparer<TKey>.Default;
+			return string.Format(fmt, args);
+		}
+	}
+
+
+	public static class IListExtensions
+	{
+		public static int BinarySearch<T, TKey>(this IList<T> list, int start, int length, TKey value, Func<T, TKey> selector, IComparer<TKey> comparer)
+		{
+			int lo = start;
+			int hi = start + length - 1;
 
 			while (lo <= hi)
 			{
 				int median = lo + (hi - lo >> 1);
-				var num = comp.Compare(selector(tf[median]), target);
+				var num = comparer.Compare(selector(list[median]), value);
 				if (num == 0)
 					return median;
 				if (num  < 0)
@@ -54,18 +62,19 @@ namespace CCEngine
 			return ~lo;
 		}
 
-		public static string F(this string fmt, params object[] args)
+		public static int BinarySearch<T>(this IList<T> list, int start, int length, T value, IComparer<T> comparer)
 		{
-			return string.Format(fmt, args);
+			return list.BinarySearch(start, length, value, x => x, comparer);
 		}
 
-		public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dict,
-			TKey key, TValue def=default(TValue))
+		public static int BinarySearch<T>(this IList<T> list, int start, int length, T value)
 		{
-			TValue value;
-			if (dict.TryGetValue(key, out value))
-				return value;
-			return def;
+			return list.BinarySearch(start, length, value, Comparer<T>.Default);
+		}
+
+		public static int BinarySearch<T>(this IList<T> list, T value)
+		{
+			return list.BinarySearch(0, list.Count, value);
 		}
 
 		public static void Swap<T>(this IList<T> list, int idx0, int idx1)

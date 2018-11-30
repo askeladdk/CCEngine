@@ -13,44 +13,37 @@ namespace CCEngine.Simulation
 	/// There is only one World in the game.
 	public partial class World
 	{
-		public delegate object Builder(IAttributeTable table);
-
-		private const int MaxEntities = 1024;
-
-		private static IReadOnlyDictionary<Type, Builder> componentBuilders =
-			new Dictionary<Type, Builder> {
-				{typeof(CLocomotion), CLocomotion.Create},
-				{typeof(CAnimation), CAnimation.Create},
-				{typeof(CPlacement), CPlacement.Create},
-				{typeof(CRadio), CRadio.Create},
-			};
-
-		private Registry registry = new Registry(MaxEntities);
+		private EntityComponentRegistry ecregistry =
+			new EntityComponentRegistry(1024, ComponentBuilder.Types);
 		private Queue<IMission> radio = new Queue<IMission>();
 		private ObjectStore objectStore;
 		private Map map;
 
+		private DriveSystem driveSystem;
+
+		public int Clock { get; private set; }
 		public ObjectStore ObjectStore { get => objectStore; }
-		public Registry Registry { get => registry; }
+		public AssetManager AssetManager { get => objectStore.AssetManager; }
+		public EntityComponentRegistry Registry { get => ecregistry; }
 		public Map Map { get => map; }
 
 		public World(ObjectStore objectStore)
 		{
 			this.objectStore = objectStore;
 			this.map = new Map(objectStore);
-
-			registry.RegisterType<CAnimation>();
-			registry.RegisterType<CLocomotion>();
-			registry.RegisterType<CRadio>();
-			registry.RegisterType<CPlacement>();
+			this.driveSystem = new DriveSystem(this);
 		}
 
 		private Entity Assemble(Blueprint bp, IAttributeTable attributes)
 		{
-			var entity = registry.Create();
+			var entity = ecregistry.Create();
 			var table = new AttributeTableList{attributes, bp.Configuration};
+			var args = new ComponentBuilderArgs(this, table);
 			foreach(var type in bp.ComponentTypes)
-				registry.Attach(type, entity, componentBuilders[type](table));
+			{
+				var component = ComponentBuilder.Build(type, args);
+				ecregistry.Set(type, entity, component);
+			}
 			return entity;
 		}
 
@@ -58,35 +51,63 @@ namespace CCEngine.Simulation
 		{
 			var g = Game.Instance;
 			var clock = g.GlobalClock;
-			foreach(var entity in registry.View<CAnimation, CLocomotion>())
+			foreach(var entity in ecregistry.View<PoseComponent, AnimationComponent>())
 			{
-				var loco = registry.Get<CLocomotion>(entity);
-				var anim = registry.Get<CAnimation>(entity);
-				loco.Process();
-				anim.NextFrame(clock, loco.Facing);
-				//map.Unplace(loco.LastPosition.CPos);
-				//map.Place(loco.Position.CPos, entity);
+				var pose = ecregistry.Get<PoseComponent>(entity);
+				var anim = ecregistry.Get<AnimationComponent>(entity);
+				var nextFrame = anim.Sequence.GetFrame(anim.SequenceType, clock, pose.Facing);
+				// var reset = nextFrame < anim.Frame;
+				anim = new AnimationComponent(anim.Sequence, anim.SequenceType, nextFrame);
+				ecregistry.Set(entity, anim);
 			}
 		}
 
 		private void ProcessRadio()
 		{
-			var g = Game.Instance;
+			// var g = Game.Instance;
 
-			while(radio.Count != 0)
+			// while(radio.Count != 0)
+			// {
+			// 	var mission = radio.Dequeue();
+			// 	var entity = mission.Entity;
+			// 	CRadio cradio;
+			// 	if(Registry.TryGet<CRadio>(entity, out cradio))
+			// 	{
+			// 		cradio.Push(mission);
+			// 	}
+			// }
+
+			// foreach(var entity in ecregistry.View<CRadio>())
+			// {
+			// 	ecregistry.Get<CRadio>(entity).Process();
+			// }
+
+			IMission mission;
+			while(this.radio.TryDequeue(out mission))
 			{
-				var mission = radio.Dequeue();
-				var entity = mission.Entity;
-				CRadio cradio;
-				if(Registry.TryGet<CRadio>(entity, out cradio))
+				MissionMove move;
+				if(mission.Is<MissionMove>(out move))
 				{
-					cradio.Push(mission);
+					if(this.Registry.Has<DriveComponent, PoseComponent>(move.Entity))
+					{
+						DriveComponent drive = this.Registry.Get<DriveComponent>(move.Entity);
+						PoseComponent pose = this.Registry.Get<PoseComponent>(move.Entity);
+						var flowField = new Algorithms.SingularFlowField<SpeedType>(
+							this.map,
+							pose.Position.V0.CPos,
+							move.Destination,
+							drive.SpeedType);
+						drive = new DriveComponent(
+							drive.SpeedType,
+							drive.Speed,
+							DriveState.PreMove,
+							flowField,
+							new Vector2I(),
+							new XPos()
+						);
+						this.Registry.Set(move.Entity, drive);
+					}
 				}
-			}
-
-			foreach(var entity in registry.View<CRadio>())
-			{
-				registry.Get<CRadio>(entity).Process();
 			}
 		}
 
@@ -98,17 +119,24 @@ namespace CCEngine.Simulation
 			var objectBounds = args.bounds.ObjectBounds;
 			var alpha = args.alpha;
 
-			foreach(var entity in registry.View<CAnimation, CLocomotion>())
+			// var t = this.Clock;
+
+			foreach(var entity in ecregistry.View<PoseComponent, AnimationComponent, RepresentationComponent>())
 			{
-				var loco = registry.Get<CLocomotion>(entity);
-				var anim = registry.Get<CAnimation>(entity);
-				var pos = loco.InterpolatedPosition(alpha);
-				var bb = anim.AABB.Translate(pos.X, pos.Y);
+				var pose = ecregistry.Get<PoseComponent>(entity);
+				var anim = ecregistry.Get<AnimationComponent>(entity);
+				var repr = ecregistry.Get<RepresentationComponent>(entity);
+				var pos = pose.Position;
+				// var pos0 = pos.Lerp(pos.Alpha(t));
+				// var pos1 = pos.Lerp(pos.Alpha(t+1));
+				// var finalPos = XPos.Lerp(alpha, pos0, pos1);
+				var finalPos = pos.Lerp(args.alpha);
+				var bb = repr.AABB.Translate(finalPos.X, finalPos.Y);
 				if (objectBounds.IntersectsWith(bb))
 				{
-					var p = camera.MapToScreenCoord(pos.X, pos.Y);
-					renderer.Blit(anim.Sprite, anim.Frame,
-						p.X + anim.DrawOffset.X, p.Y + anim.DrawOffset.Y);
+					var p = camera.MapToScreenCoord(finalPos.X, finalPos.Y);
+					renderer.Blit(repr.Sprite, anim.Frame,
+						p.X + repr.DrawOffset.X, p.Y + repr.DrawOffset.Y);
 				}
 			}
 		}
@@ -120,7 +148,7 @@ namespace CCEngine.Simulation
 			var scenario = Scenario.Load(scname, objectStore);
 			var rules = new ConfigurationList(scenario.Configuration, rulesini);
 
-			registry.Clear();
+			ecregistry = new EntityComponentRegistry(1024, ComponentBuilder.Types);
 			objectStore.LoadRules(rules);
 			map.Load(scenario);
 
@@ -170,12 +198,12 @@ namespace CCEngine.Simulation
 
 		private bool TryPlace(Entity entity)
 		{
-			CPlacement placement;
-			if(!registry.TryGet<CPlacement>(entity, out placement))
+			PlacementComponent placement;
+			if(!ecregistry.TryGet<PlacementComponent>(entity, out placement))
 				return false;
 
-			var pose = registry.Get<CLocomotion>(entity);
-			var center = pose.Position.CPos;
+			var pose = ecregistry.Get<PoseComponent>(entity);
+			var center = pose.Position.V0.CPos;
 
 			var occupy = placement.OccupyGrid;
 			map.Place(center, entity, occupy);
@@ -217,30 +245,16 @@ namespace CCEngine.Simulation
 		public void Update(float dt)
 		{
 			Map.Update();
-			//registry.Update(dt);
 			ProcessAnimations();
 			ProcessRadio();
+			this.driveSystem.Process();
+			this.Clock += 1;
 		}
 
 		public void Render(RenderArgs args)
 		{
 			Map.Render(args);
 			RenderObjects(args);
-			//registry.Render(args);
-		}
-
-		private static void ProcessAnimations(World src, World dst)
-		{
-			var g = Game.Instance;
-			var clock = g.GlobalClock;
-
-			foreach(var entity in src.registry.View<CAnimation, CLocomotion>())
-			{
-				var loco = src.registry.Get<CLocomotion>(entity);
-				var anim = src.registry.Get<CAnimation>(entity);
-				loco.Process();
-				anim.NextFrame(clock, loco.Facing);
-			}
 		}
 	}
 }

@@ -24,7 +24,7 @@ namespace CCEngine.Simulation
 			new OrderedDictionary<string, House>();
 		private OrderedDictionary<string, Side> sides =
 			new OrderedDictionary<string, Side>();
-		private Land[] lands = new Land[Land.Lands.Count];
+		private Land[] lands = new Land[Land.Count];
 
 		private AssetManager assetManager;
 
@@ -44,6 +44,11 @@ namespace CCEngine.Simulation
 		public Theater GetTheater(string id)
 		{
 			return theaters[id];
+		}
+
+		public Land[] Lands
+		{
+			get => this.lands;
 		}
 
 		public Land GetLand(LandType landType)
@@ -86,11 +91,10 @@ namespace CCEngine.Simulation
 				houses[kv.Value] = new House(kv.Value, rules);
 			foreach(var kv in rules.Enumerate("Sides"))
 				sides[kv.Key] = new Side(kv.Key, kv.Value.Split(","), houses);
-			foreach(var kv in Land.Lands)
-				lands[(int)kv.Key] = new Land(rules, kv.Value, kv.Key);
 			foreach(var kv in rules.Enumerate("VehicleTypes"))
 				vehicleTypes[kv.Value] = null;
 
+			LoadLands(rules);
 			LoadSequences(art);
 			LoadFoundations(art);
 			LoadGrids(art);
@@ -113,7 +117,7 @@ namespace CCEngine.Simulation
 
 				var artId = rules.GetString(id, "Image", id);
 				var sequenceId = art.GetString(artId, "Sequence", "DefaultSequence");
-				var mz = rules.GetBool(id, "Tracked", false) ? MovementZone.Track : MovementZone.Wheel;
+				var spdt = rules.GetBool(id, "Tracked", false) ? SpeedType.Track : SpeedType.Wheel;
 
 				var config = new AttributeTable
 				{
@@ -121,32 +125,54 @@ namespace CCEngine.Simulation
 					{"Basic.Type", TechnoType.Vehicle},
 					{"Animation.Sprite", "{0}.SHP".F(artId)},
 					{"Animation.Sequence", sequenceId},
-					{"Locomotion.Speed", rules.GetInt(id, "Speed", 1)},
-					{"Locomotion.MovementZone", mz},
-					{"Locomotion.Locomotor", "Drive"},
+					{"Locomotor.Speed", rules.GetInt(id, "Speed", 1)},
+					{"Locomotor.SpeedType", spdt},
 				};
 
 				vehicleTypes[id] = new Blueprint(config,
-					typeof(CLocomotion),
-					typeof(CAnimation),
-					typeof(CRadio)
-					// typeof(Locomotor2),
-					// typeof(Pose)
+					typeof(AnimationComponent),
+					typeof(PoseComponent),
+					typeof(RepresentationComponent),
+					typeof(DriveComponent)
 				);
+			}
+		}
+
+		private void LoadLands(IConfiguration cfg)
+		{
+			var landTypes  = Enum.GetNames(typeof(LandType));
+			var speedTypes = Enum.GetNames(typeof(SpeedType));
+			for(var i = 0; i < landTypes.Length; i++)
+			{
+				var buildable = cfg.GetBool(landTypes[i], "Buildable");
+				var speedMultipliers = new float[Speed.Count];
+				for(var j = 0; j < speedTypes.Length; j++)
+					speedMultipliers[j] = cfg.GetFloat(landTypes[i], speedTypes[j]);
+				this.lands[i] = new Land(buildable, speedMultipliers);
 			}
 		}
 
 		private void LoadSequences(IConfiguration cfg)
 		{
+			var enumNames = Enum.GetNames(typeof(SequenceType));
+
 			foreach(var kv in cfg.Enumerate("Sequences"))
 			{
 				var id = kv.Value;
 				var seq = new Sequence();
-				foreach (var entry in cfg.Enumerate(id))
+
+				foreach(var name in enumNames)
 				{
-					var a = cfg.GetIntArray(id, entry.Key, 5);
-					seq.Add(entry.Key, a[0], a[1], a[2], a[3], a[4]);
+					if(!cfg.Contains(id, name))
+						continue;
+					var a = cfg.GetIntArray(id, name, 5);
+					if(a == null)
+						continue;
+					var seqe = new SequenceEntry(a[0], a[1], a[2], a[3], a[4]);
+					var seqt = Enum.Parse<SequenceType>(name);
+					seq.Set(seqt, seqe);
 				}
+
 				sequences[id] = seq;
 			}
 		}
@@ -207,14 +233,16 @@ namespace CCEngine.Simulation
 				var occupyGridId = cfg.GetString(id, "Occupy", "DefaultGrid");
 				var overlapGridId = cfg.GetString(id, "Overlap", "DefaultGrid");
 
+				var foundation = this.GetFoundation(foundationId);
+
 				var config = new AttributeTable
 				{
 					{"Basic.ID", id},
 					{"Basic.Type", TechnoType.Terrain},
 					{"Animation.Sprite", spriteId},
 					{"Animation.Sequence", seqId},
-					{"Animation.DrawOffsetX", (spr.Size.Width - Constants.TileSize) / 2},
-					{"Animation.DrawOffsetY", (spr.Size.Height - Constants.TileSize) / 2},
+					{"Animation.DrawOffsetX", (Constants.TileSize * (foundation.Width  - 1)) / 2},
+					{"Animation.DrawOffsetY", (Constants.TileSize * (foundation.Height - 1)) / 2},
 					{"Placement.Foundation", foundationId},
 					{"Placement.Occupy", occupyGridId},
 					{"Placement.Overlap", overlapGridId},
@@ -222,9 +250,10 @@ namespace CCEngine.Simulation
 				};
 
 				terrains[id] = new Blueprint(config,
-					typeof(CLocomotion),
-					typeof(CAnimation),
-					typeof(CPlacement)
+					typeof(AnimationComponent),
+					typeof(PlacementComponent),
+					typeof(PoseComponent),
+					typeof(RepresentationComponent)
 					// typeof(Locomotor2),
 					// typeof(Pose),
 					// typeof(Placement)

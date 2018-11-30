@@ -19,8 +19,7 @@ namespace CCEngine.Collections
 		/// The capacity must be a power of two.
 		public RingBuffer(int capacity)
 		{
-			if( (capacity & (capacity - 1)) != 0 )
-				throw new ArgumentException("Capacity must be a power of two.");
+			Debug.Assert( (capacity >= 1) && ((capacity & (capacity - 1)) == 0) );
 			this.buffer = new T[capacity];
 			this.head = 0;
 			this.tail = 0;

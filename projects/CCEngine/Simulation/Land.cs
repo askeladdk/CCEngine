@@ -1,12 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace CCEngine.Simulation
 {
+	/// <summary>
 	/// Land type specifies what kind of land a tile is.
+	/// </summary>
 	public enum LandType : byte
 	{
-		// The order is important
+		// The order is important, do not change
 		Clear,
 		Beach,
 		Rock,
@@ -16,77 +18,37 @@ namespace CCEngine.Simulation
 		Rough,
 		Resource,
 		Wall,
-		Count,
 	}
 
+	/// <summary>
 	/// Land specifies which tiles are passable by which movement zones.
-	public class Land
+	/// </summary>
+	public struct Land
 	{
-		private static Dictionary<LandType, string> translate = new Dictionary<LandType, string>
-		{
-			{LandType.Clear, "Clear"},
-			{LandType.Beach, "Beach"},
-			{LandType.Rock, "Rock"},
-			{LandType.Road, "Road"},
-			{LandType.Water, "Water"},
-			{LandType.River, "River"},
-			{LandType.Rough, "Rough"},
-			{LandType.Resource, "Ore"},
-			{LandType.Wall, "Wall"},
-		};
+		public static int Count = Enum.GetNames(typeof(LandType)).Length;
 
-		public static IReadOnlyDictionary<LandType, string> Lands
+		private int[] speedMultipliers;
+
+		public bool IsBuildable { get; private set; }
+
+		public Land(bool buildable, float[] speedMultipliers)
 		{
-			get { return translate; }
+			Debug.Assert(speedMultipliers.Length == Simulation.Speed.Count);
+			this.IsBuildable = buildable;
+			this.speedMultipliers = new int[Simulation.Speed.Count];
+			for(var i = 0; i < Simulation.Speed.Count; i++)
+				this.speedMultipliers[i] = (int)(100 * (1 / speedMultipliers[i]));
 		}
 
-		private float[] speeds = new float[MovementZoneExt.Zones.Count];
-		private bool buildable;
-		private LandType type;
-
-		public Land(IConfiguration ini, string section, LandType type)
+		public int Speed(SpeedType spdt, int baseSpeed)
 		{
-			this.buildable = ini.GetBool(section, "Buildable");
-			this.type = type;
-
-			foreach (var kv in MovementZoneExt.Zones)
-			{
-				var speed = ini.GetFloat(section, kv.Key);
-				this.speeds[(int)kv.Value] = speed;
-			}
+			var mult = this.speedMultipliers[(int)spdt];
+			return mult > 0 ? (100 * baseSpeed) / mult : 0;
 		}
 
-		public float SpeedMultiplier(MovementZone z)
+		public bool IsPassable(SpeedType spdt)
 		{
-			switch(z)
-			{
-				case MovementZone.None:
-					return 0.0f;
-				case MovementZone.Fly:
-					return 1.0f;
-				default:
-					return this.speeds[(int)z];
-			}
-		}
-
-		public bool IsPassable(MovementZone z)
-		{
-			return SpeedMultiplier(z) > 0;
-		}
-
-		public bool IsBuildable
-		{
-			get { return this.buildable; }
-		}
-
-		public LandType Type
-		{
-			get { return this.type; }
-		}
-
-		public override string ToString()
-		{
-			return this.type.ToString();
+			return this.speedMultipliers[(int)spdt] > 0;
 		}
 	}
 }

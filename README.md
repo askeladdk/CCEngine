@@ -8,7 +8,7 @@
 
 ## About
 
-CCEngine is my attempt to recreate the C&C: Tiberian Dawn and Red Alert 1 games in a single engine. My aim is to emulate the original games as closely as possible with as little hard coded values as possible, so as to make it easy to extend the games as well as the engine itself. The original game assets will be used whenever possible. I am focusing my attention on RA1 first because it is a more advanced game.
+CCEngine is my attempt to recreate the C&C: Tiberian Dawn and Red Alert 1 games in a single engine. My aim is to emulate the original games as closely as possible with as little hardcoding as possible, so as to make it easy to extend the games as well as the engine itself. The original game assets will be used whenever possible. I am focusing my attention on RA1 first because it is a more advanced game.
 
 CCEngine is programmed in C# on the .NET Core platform with OpenTK (OpenGL + OpenAL).
 
@@ -79,7 +79,7 @@ TD and RA have almost the same engine, though each do have some unique features.
 * TD: SAM Site popup before firing animation.
 * TD: Obelisk laser graphical effect.
 * RA: The Chronosphere and Iron Curtain superweapons.
-* RA: Larger maps (128x128 vs 64x64) and more players (4 vs 8).
+* RA: Larger maps (128x128 vs 64x64) and more players (8 vs 4).
 * RA: Destroyable bridges.
 * RA: Cruiser is the only unit in both games that has two turrets.
 * RA: Tesla weapon graphical effect.

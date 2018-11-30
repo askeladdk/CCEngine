@@ -7,7 +7,8 @@ namespace CCEngine.Logic
 		private IGameState[] states =
 		{
 			new NullState(),
-			new MainMenu()
+			new MainMenu(),
+			// new SimulationTest(),
 		};
 
 		private int curState = 0;

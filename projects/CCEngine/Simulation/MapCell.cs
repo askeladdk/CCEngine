@@ -25,7 +25,7 @@ namespace CCEngine.Simulation
 			set { occupyEntityId = value; }
 		}
 
-		public bool IsPassable(MovementZone mz)
+		public bool IsPassable(SpeedType mz)
 		{
 			return land.IsPassable(mz) && (occupyEntityId == 0);
 		}

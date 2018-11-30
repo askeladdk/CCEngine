@@ -3,74 +3,61 @@ using System.Diagnostics;
 
 namespace CCEngine
 {
-	/// Time-varying value that is interpolated between ticks t0 and t1.
-	/// There is no concept of time besides the current (t0) and future (t1) moment.
-	/// Use Lerp.Advance to advance to the next moment in time.
+	/// <summary>
+	/// A value interpolated between two moments in time: current and previous.
+	/// </summary>
 	public struct Interpolated<T>
 	{
 		private T v0;
 		private T v1;
-		private int t0;
-		private int t1;
 
-		public int T0 { get => t0; }
-		public int T1 { get => t1; }
 		public T V0 { get => v0; }
 		public T V1 { get => v1; }
 
-		public Interpolated(int t0, T v0, int t1, T v1)
+		public Interpolated(T v0, T v1)
 		{
-			Debug.Assert(t0 <= t1);
 			this.v0 = v0;
 			this.v1 = v1;
-			this.t0 = t0;
-			this.t1 = t1;
 		}
 
-		public float Alpha(float t)
+		/// Advance from [v0, v1] to [v1, v].
+		public Interpolated<T> Advance(T v)
 		{
-			return Helpers.Clamp((t - t0) / (t1 - t0), 0.0f, 1.0f);
-		}
-
-		/// Advance from [t0, t1] to [t1, t1 + dt].
-		public Interpolated<T> Advance(int dt, T v)
-		{
-			return new Interpolated<T>(t1, v1, t1 + dt, v);
-		}
-
-		/// Adjust from [t0, t1] to [t0, t0 + dt].
-		public Interpolated<T> Adjust(int dt, T v)
-		{
-			return new Interpolated<T>(t0, v0, t0 + dt, v);
+			return new Interpolated<T>(v1, v);
 		}
 	}
 
 	public static class Interpolated
 	{
 		/// Create initial interpolation.
-		public static Interpolated<T> Create<T>(int t0, T v0, int t1, T v1)
+		public static Interpolated<T> Create<T>(T v0, T v1)
 		{
-			return new Interpolated<T>(t0, v0, t1, v1);
+			return new Interpolated<T>(v0, v1);
 		}
 
 		/// Create initial interpolation.
-		public static Interpolated<T> Create<T>(int t, T v)
+		public static Interpolated<T> Create<T>(T v)
 		{
-			return new Interpolated<T>(t, v, t, v);
+			return new Interpolated<T>(v, v);
 		}
 
-		/// Interpolate at tick t.
-		public static float Lerp(this Interpolated<float> lerp, float t)
+		/// Linear interpolation of float.
+		public static float Lerp(this Interpolated<float> lerp, float alpha)
 		{
-			var alpha = lerp.Alpha(t);
 			return lerp.V0 * (1 - alpha) + lerp.V1 * alpha;
 		}
 
-		/// Interpolate at tick t.
-		public static XPos Lerp(this Interpolated<XPos> lerp, float t)
+		/// Linear interpolation of XPos.
+		public static XPos Lerp(this Interpolated<XPos> lerp, float alpha)
 		{
-			var alpha = lerp.Alpha(t);
-			return XPos.Lerp(alpha, lerp.V0, lerp.V1);
+			// return XPos.Lerp(alpha, lerp.V0, lerp.V1);
+			var dx = lerp.V1.X - lerp.V0.X;
+			var dy = lerp.V1.Y - lerp.V0.Y;
+			return new XPos(
+				0, 0,
+				lerp.V0.X + (int)(dx * alpha),
+				lerp.V0.Y + (int)(dy * alpha)
+			);
 		}
 	}
 }

@@ -49,5 +49,26 @@ namespace CCEngine.Simulation
 			this.overlays = overlays;
 			this.terrains = terrains;
 		}
+
+		private static Overlay[] LoadOverlays(IConfiguration config,
+			AssetManager assets, string theaterExt)
+		{
+			var overlays = new Overlay[256];
+			foreach(var kv in config.Enumerate("Overlays"))
+			{
+				var idx = int.Parse(kv.Key);
+				var overlayid = kv.Value;
+				var type = config.GetString(overlayid, "Type");
+				var ext = config.GetBool(overlayid, "Theater") ? theaterExt : "SHP";
+				var art = assets.Load<Sprite>("{0}.{1}".F(overlayid, ext));
+				overlays[idx] = new Overlay(type, art);
+			}
+			return overlays;
+		}
+
+		public static Theater Load(IConfiguration cfg, AssetManager assets)
+		{
+			return null;
+		}
 	}
 }
