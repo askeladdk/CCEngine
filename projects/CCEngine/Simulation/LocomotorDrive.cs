@@ -116,11 +116,14 @@ namespace CCEngine.Simulation
 			// then it will transition the state back to PreMove.
 			if(state == DriveState.Moving)
 			{
-				var diff = destination.Difference(currentPosition);
+				var diff = XPos.Sub(destination, currentPosition);
 				var contheading = true;
 
+				var movlepx = Lepton.FromPixel(movementVector.X);
+				var movlepy = Lepton.FromPixel(movementVector.Y);
+
 				// reaching end of cell
-				if( Math.Abs(diff.X) < Math.Abs(movementVector.X) || Math.Abs(diff.Y) < Math.Abs(movementVector.Y) )
+				if( Math.Abs(diff.LeptonsX) < Math.Abs(movlepx) || Math.Abs(diff.LeptonsY) < Math.Abs(movlepy) )
 				{
 					// check if next cell in the path follows the same direction
 					var dirvec = facing.CardinalDirection.ToVector();
@@ -132,7 +135,7 @@ namespace CCEngine.Simulation
 				}
 
 				if(contheading)
-					nextPosition = currentPosition.Translate(0, 0, movementVector.X, movementVector.Y);
+					nextPosition = XPos.Add(currentPosition, XPos.FromLeptons(movlepx, movlepy));
 				else
 					nextPosition = destination;
 			}

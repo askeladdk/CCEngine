@@ -14,7 +14,7 @@ namespace CCEngine
 		public int X { get => cellId % Constants.MapSize; }
 		public int Y { get => cellId / Constants.MapSize; }
 		public ushort CellId { get => cellId; }
-		public XPos XPos { get => new XPos(cellId); }
+		public XPos XPos { get => XPos.FromCellId(cellId); }
 
 		public CPos(int cx, int cy)
 		{

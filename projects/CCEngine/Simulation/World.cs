@@ -131,10 +131,12 @@ namespace CCEngine.Simulation
 				// var pos1 = pos.Lerp(pos.Alpha(t+1));
 				// var finalPos = XPos.Lerp(alpha, pos0, pos1);
 				var finalPos = pos.Lerp(args.alpha);
-				var bb = repr.AABB.Translate(finalPos.X, finalPos.Y);
+				var pixelx = Lepton.ToPixel(finalPos.LeptonsX);
+				var pixely = Lepton.ToPixel(finalPos.LeptonsY);
+				var bb = repr.AABB.Translate(pixelx, pixely);
 				if (objectBounds.IntersectsWith(bb))
 				{
-					var p = camera.MapToScreenCoord(finalPos.X, finalPos.Y);
+					var p = camera.MapToScreenCoord(pixelx, pixely);
 					renderer.Blit(repr.Sprite, anim.Frame,
 						p.X + repr.DrawOffset.X, p.Y + repr.DrawOffset.Y);
 				}
@@ -156,7 +158,7 @@ namespace CCEngine.Simulation
 			{
 				var attrs = new AttributeTable
 				{
-					{"Locomotion.Position", new XPos(terrain.cell)},
+					{"Locomotion.Position", XPos.FromCell(terrain.cell)},
 				};
 				var msg = new MsgSpawnEntity(terrain.terrainId, TechnoType.Terrain, attrs);
 				g.SendMessage(msg);

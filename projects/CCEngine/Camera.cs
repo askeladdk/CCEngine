@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using CCEngine.Simulation;
 
@@ -94,11 +95,10 @@ namespace CCEngine
 
 		public XPos ScreenToMapCoord(int mx, int my)
 		{
-			if (!viewPort.Contains(mx, my))
-				return new XPos(0, 0, -1, -1);
-			var x = mx - viewPort.X + topLeft.X;
-			var y = my - viewPort.Y + topLeft.Y;
-			return new XPos(0, 0, x, y);
+			Debug.Assert(viewPort.Contains(mx, my));
+			var x = Lepton.FromPixel(mx - viewPort.X + topLeft.X);
+			var y = Lepton.FromPixel(my - viewPort.Y + topLeft.Y);
+			return XPos.FromLeptons(x, y);
 		}
 
 		public Point MapToScreenCoord(int mapX, int mapY)
