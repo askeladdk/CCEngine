@@ -1,4 +1,4 @@
-﻿namespace CCToolKit
+namespace CCToolKit
 {
 	partial class frmStrEd
 	{

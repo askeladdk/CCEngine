@@ -1,4 +1,4 @@
-﻿/**
+/**
  * From CCMaps by zzattack distributed under the MIT license.
  * https://github.com/zzattack/ccmaps-net
  */
