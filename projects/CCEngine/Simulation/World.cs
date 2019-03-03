@@ -92,9 +92,10 @@ namespace CCEngine.Simulation
 					{
 						DriveComponent drive = this.Registry.Get<DriveComponent>(move.Entity);
 						PoseComponent pose = this.Registry.Get<PoseComponent>(move.Entity);
+						// TODO: FlowField should be not directly attached to component.
 						var flowField = new Algorithms.SingularFlowField<SpeedType>(
 							this.map,
-							pose.Position.V0.CPos,
+							CPos.FromXPos(pose.Position.V0),
 							move.Destination,
 							drive.SpeedType);
 						drive = new DriveComponent(
@@ -131,10 +132,12 @@ namespace CCEngine.Simulation
 				// var pos1 = pos.Lerp(pos.Alpha(t+1));
 				// var finalPos = XPos.Lerp(alpha, pos0, pos1);
 				var finalPos = pos.Lerp(args.alpha);
-				var bb = repr.AABB.Translate(finalPos.X, finalPos.Y);
+				var pixelx = Lepton.ToPixel(finalPos.LeptonsX);
+				var pixely = Lepton.ToPixel(finalPos.LeptonsY);
+				var bb = repr.AABB.Translate(pixelx, pixely);
 				if (objectBounds.IntersectsWith(bb))
 				{
-					var p = camera.MapToScreenCoord(finalPos.X, finalPos.Y);
+					var p = camera.MapToScreenCoord(pixelx, pixely);
 					renderer.Blit(repr.Sprite, anim.Frame,
 						p.X + repr.DrawOffset.X, p.Y + repr.DrawOffset.Y);
 				}
@@ -156,7 +159,7 @@ namespace CCEngine.Simulation
 			{
 				var attrs = new AttributeTable
 				{
-					{"Locomotion.Position", new XPos(terrain.cell)},
+					{"Locomotion.Position", XPos.FromCell(terrain.cell)},
 				};
 				var msg = new MsgSpawnEntity(terrain.terrainId, TechnoType.Terrain, attrs);
 				g.SendMessage(msg);
@@ -167,7 +170,7 @@ namespace CCEngine.Simulation
 				var attrs = new AttributeTable
 				{
 					{"Basic.Owner", unit.house},
-					{"Locomotion.Position", unit.cell.XPos},
+					{"Locomotion.Position", XPos.FromCell(unit.cell)},
 					{"Locomotion.Facing", unit.facing},
 				};
 				var msg = new MsgSpawnEntity(unit.technoId, TechnoType.Vehicle, attrs);
@@ -203,7 +206,7 @@ namespace CCEngine.Simulation
 				return false;
 
 			var pose = ecregistry.Get<PoseComponent>(entity);
-			var center = pose.Position.V0.CPos;
+			var center = CPos.FromXPos(pose.Position.V0);
 
 			var occupy = placement.OccupyGrid;
 			map.Place(center, entity, occupy);

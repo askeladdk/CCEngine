@@ -80,6 +80,7 @@ namespace CCEngine.Simulation
 			var destination = loco.Destination;
 			var currentPosition = position.V1;
 			var nextPosition = position.V1;
+			var currentCell = CPos.FromXPos(currentPosition);
 
 			// The PreMove state determines the next cell in the path and whether the
 			// final destination has been reached.
@@ -88,18 +89,18 @@ namespace CCEngine.Simulation
 				CardinalDirection dir;
 
 				// destination reached -> Idle
-				if(flowField == null || flowField.IsDestination(currentPosition.CPos))
+				if(flowField == null || flowField.IsDestination(currentCell))
 				{
 					state = DriveState.Idle;
 					flowField = null;
 				}
 				// Get the next cell in the path and the movement direction and speed -> Moving
-				else if(flowField.TryGetDirection(currentPosition.CPos, out dir))
+				else if(flowField.TryGetDirection(currentCell, out dir))
 				{
 					var dirvec = dir.ToVector();
-					var spd = flowField.SpeedAt(currentPosition.CPos, speedType, speed);
+					var spd = flowField.SpeedAt(currentCell, speedType, speed);
 					movementVector = dirvec.Multiply(spd);
-					destination = currentPosition.CPos.Translate(dirvec.X, dirvec.Y).XPos;
+					destination = XPos.FromCell(currentCell.Translate(dirvec.X, dirvec.Y));
 					facing = new BinaryAngle(dir);
 					state = DriveState.Moving;
 				}
@@ -116,15 +117,18 @@ namespace CCEngine.Simulation
 			// then it will transition the state back to PreMove.
 			if(state == DriveState.Moving)
 			{
-				var diff = destination.Difference(currentPosition);
+				var diff = XPos.Sub(destination, currentPosition);
 				var contheading = true;
 
+				var movlepx = Lepton.FromPixel(movementVector.X);
+				var movlepy = Lepton.FromPixel(movementVector.Y);
+
 				// reaching end of cell
-				if( Math.Abs(diff.X) < Math.Abs(movementVector.X) || Math.Abs(diff.Y) < Math.Abs(movementVector.Y) )
+				if( Math.Abs(diff.LeptonsX) < Math.Abs(movlepx) || Math.Abs(diff.LeptonsY) < Math.Abs(movlepy) )
 				{
 					// check if next cell in the path follows the same direction
 					var dirvec = facing.CardinalDirection.ToVector();
-					var next = currentPosition.CPos.Translate(dirvec.X, dirvec.Y);
+					var next = currentCell.Translate(dirvec.X, dirvec.Y);
 					CardinalDirection nextdir;
 					var notAtEndOfPath = flowField.TryGetDirection(next, out nextdir);
 					contheading = notAtEndOfPath && (nextdir == facing.CardinalDirection);
@@ -132,7 +136,7 @@ namespace CCEngine.Simulation
 				}
 
 				if(contheading)
-					nextPosition = currentPosition.Translate(0, 0, movementVector.X, movementVector.Y);
+					nextPosition = XPos.Add(currentPosition, XPos.FromLeptons(movlepx, movlepy));
 				else
 					nextPosition = destination;
 			}

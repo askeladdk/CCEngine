@@ -64,7 +64,7 @@ namespace CCEngine.Simulation
 				int screenX = bounds.ScreenTopLeft.X + Constants.TileSizeHalf;
 				for (int x = bounds.CellBounds.Left; x < bounds.CellBounds.Right; x++)
 				{
-					var cpos = new CPos(x, y);
+					var cpos = CPos.FromXY(x, y);
 					var color = (cpos == map.Highlight) ? Color4.LightBlue : Color4.White;
 					var (tmp, tmpidx) = map.GetTemplate(cpos);
 					args.renderer.Blit(tmp, tmpidx, screenX, screenY, color.ToArgb());

@@ -50,14 +50,7 @@ namespace CCEngine
 		/// Linear interpolation of XPos.
 		public static XPos Lerp(this Interpolated<XPos> lerp, float alpha)
 		{
-			// return XPos.Lerp(alpha, lerp.V0, lerp.V1);
-			var dx = lerp.V1.X - lerp.V0.X;
-			var dy = lerp.V1.Y - lerp.V0.Y;
-			return new XPos(
-				0, 0,
-				lerp.V0.X + (int)(dx * alpha),
-				lerp.V0.Y + (int)(dy * alpha)
-			);
+			return XPos.Lerp(alpha, lerp.V0, lerp.V1);
 		}
 	}
 }

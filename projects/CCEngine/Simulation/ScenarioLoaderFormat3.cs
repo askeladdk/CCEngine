@@ -65,7 +65,7 @@ namespace CCEngine.Simulation
 				var house = data[0];
 				var technoId = data[1];
 				var health = int.Parse(data[2]);
-				var cell = new CPos(ushort.Parse(data[3]));
+				var cell = CPos.FromCell(ushort.Parse(data[3]));
 				var facing = new BinaryAngle(int.Parse(data[4]));
 				var mission = data[5];
 				var triggerId = data[6];
@@ -107,7 +107,7 @@ namespace CCEngine.Simulation
 				var house = data[0];
 				var technoId = data[1];
 				var health = int.Parse(data[2]);
-				var cell = new CPos(ushort.Parse(data[3]));
+				var cell = CPos.FromCell(ushort.Parse(data[3]));
 				var subcell = int.Parse(data[4]);
 				var mission = data[5];
 				var facing = new BinaryAngle(int.Parse(data[6]));
@@ -139,7 +139,7 @@ namespace CCEngine.Simulation
 				var country = data[0];
 				var technoId = data[1];
 				var health = int.Parse(data[2]);
-				var cell = new CPos(ushort.Parse(data[3]));
+				var cell = CPos.FromCell(ushort.Parse(data[3]));
 				var facing = new BinaryAngle(int.Parse(data[4]));
 				var triggerId = data[5];
 				var sellable = data[6] == "1";
@@ -165,7 +165,7 @@ namespace CCEngine.Simulation
 			var terrains = new List<ScenarioTerrain>();
 			foreach(var kv in config.Enumerate("TERRAIN"))
 			{
-				var cell = new CPos(ushort.Parse(kv.Key));
+				var cell = CPos.FromCell(ushort.Parse(kv.Key));
 				terrains.Add(new ScenarioTerrain{
 					cell = cell,
 					terrainId = kv.Value,

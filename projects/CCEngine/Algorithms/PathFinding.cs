@@ -22,7 +22,7 @@ namespace CCEngine.Algorithms
 	{
 		private static int ManhattanDistance(CPos goal, CPos cpos)
 		{
-			return Math.Abs(goal.X - cpos.X) + Math.Abs(goal.Y - cpos.Y);
+			return Math.Abs(goal.CellX - cpos.CellX) + Math.Abs(goal.CellY - cpos.CellY);
 		}
 
 		/// <summary>
@@ -106,7 +106,7 @@ namespace CCEngine.Algorithms
 				var last = path.First();
 				foreach(var cell in path.Skip(1))
 				{
-					field[cell] = BinaryAngle.Between(cell.X, cell.Y, last.X, last.Y).CardinalDirection;
+					field[cell] = BinaryAngle.Between(cell.CellX, cell.CellY, last.CellX, last.CellY).CardinalDirection;
 					last = cell;
 				}
 			}

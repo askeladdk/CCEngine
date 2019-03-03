@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using CCEngine.Simulation;
 
@@ -92,13 +93,13 @@ namespace CCEngine
 			SetTopLeft(topLeft.X + dx, topLeft.Y + dy);
 		}
 
-		public XPos ScreenToMapCoord(int mx, int my)
+		public CPos ScreenToMapCoord(int mx, int my)
 		{
-			if (!viewPort.Contains(mx, my))
-				return new XPos(0, 0, -1, -1);
-			var x = mx - viewPort.X + topLeft.X;
-			var y = my - viewPort.Y + topLeft.Y;
-			return new XPos(0, 0, x, y);
+			Debug.Assert(viewPort.Contains(mx, my));
+			return CPos.FromXY(
+				Lepton.GetCell(Lepton.FromPixel(mx - viewPort.X + topLeft.X)),
+				Lepton.GetCell(Lepton.FromPixel(my - viewPort.Y + topLeft.Y))
+			);
 		}
 
 		public Point MapToScreenCoord(int mapX, int mapY)

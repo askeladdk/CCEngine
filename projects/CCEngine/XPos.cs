@@ -4,64 +4,80 @@ namespace CCEngine
 {
 	public struct XPos : IEquatable<XPos>
 	{
-		private short x, y;
+		private static XPos[] adjacent = {
+			new XPos(0xFF000000), // N  (-256,     0)
+			new XPos(0xFF000100), // NE (-256,  +256)
+			new XPos(0x00000100), // E  (   0,  +256)
+			new XPos(0x01000100), // SE (+256,  +256)
+			new XPos(0x01000000), // S  (+256,     0)
+			new XPos(0x0100FF00), // SW (+256,  -256)
+			new XPos(0x0000FF00), // W  (   0,  -256)
+			new XPos(0xFF00FF00), // SW (-256,  -256)
+		};
 
-		public int X { get => x; }
-		public int Y { get => y; }
-		public int CellX { get => x / Constants.TileSize; }
-		public int CellY { get => y / Constants.TileSize; }
-		public int OffsetX { get => x % Constants.TileSize; }
-		public int OffsetY { get => y % Constants.TileSize; }
-		public ushort CellId { get => CPos.MakeCellId(CellX, CellY); }
-		public CPos CPos { get => new CPos(CellX, CellY); }
+		private uint value;
 
-		public XPos(ushort cellId)
+		public short LeptonsX { get => (short)(value & 0xFFFF); }
+		public short LeptonsY { get => (short)((value >> 16) & 0xFFFF); }
+		public sbyte CellX { get => (sbyte)((value & 0x00007F00) >> 8); }
+		public sbyte CellY { get => (sbyte)((value & 0x7F000000) >> 24); }
+		public byte SubCellX { get => (byte)((value & 0xFF)); }
+		public byte SubCellY { get => (byte)((value >> 16) & 0xFF); }
+		public XPos Center { get => new XPos(value & 0xFF80FF80); }
+		public XPos TopLeft { get => new XPos(value & 0xFF00FF00); }
+		public bool IsNegative { get => (value & 0x80008000) != 0; }
+
+		private XPos(uint value)
 		{
-			this.x = (short)((cellId % Constants.MapSize) * Constants.TileSize + Constants.TileSizeHalf);
-			this.y = (short)((cellId / Constants.MapSize) * Constants.TileSize + Constants.TileSizeHalf);
+			this.value = value;
 		}
 
-		public XPos(CPos cpos)
+		public static XPos FromCell(ushort cellId)
 		{
-			this.x = (short)(cpos.X * Constants.TileSize + Constants.TileSizeHalf);
-			this.y = (short)(cpos.Y * Constants.TileSize + Constants.TileSizeHalf);
+			var x = (uint)cellId % Constants.MapSize;
+			var y = (uint)cellId / Constants.MapSize;
+			return new XPos(0x00800080 | (x << 8) | (y << 24));
 		}
 
-		public XPos(int cx, int cy, int ox, int oy)
+		public static XPos FromCell(CPos cell)
 		{
-			this.x = (short)(cx * Constants.TileSize + ox);
-			this.y = (short)(cy * Constants.TileSize + oy);
+			return XPos.FromCell(cell.CellId);
 		}
 
-		public XPos Translate(int cx, int cy, int ox, int oy)
+		public static XPos FromLeptons(short leptonsX, short leptonsY)
 		{
-			return new XPos(
-				0,
-				0,
-				this.x + cx * Constants.TileSize + ox,
-				this.y + cy * Constants.TileSize + oy
+			var x = (uint)( (ushort)leptonsX | ((ushort)leptonsY << 16) );
+			return new XPos(x);
+		}
+
+		public XPos AdjacentCell(CardinalDirection facing)
+		{
+			return XPos.Add(this, XPos.adjacent[(int)facing]).Center;
+		}
+
+		public static XPos Add(XPos a, XPos b)
+		{
+			var leptonsX = (short)(a.LeptonsX + b.LeptonsX);
+			var leptonsY = (short)(a.LeptonsY + b.LeptonsY);
+			return XPos.FromLeptons(leptonsX, leptonsY);
+		}
+
+		public static XPos Sub(XPos a, XPos b)
+		{
+			return XPos.FromLeptons(
+				(short)(a.LeptonsX - b.LeptonsX),
+				(short)(a.LeptonsY - b.LeptonsY)
 			);
-		}
-
-		public XPos Difference(XPos rhs)
-		{
-			return new XPos(0, 0, rhs.x - this.x, rhs.y - this.y);
 		}
 
 		public override string ToString()
 		{
-			return "({0}.{1}, {2}.{3})".F(CellX, OffsetX, CellY, OffsetY);
+			return "({0}.{1}, {2}.{3})".F(CellX, SubCellX, CellY, SubCellY);
 		}
 
 		public override int GetHashCode()
 		{
-			unchecked
-			{
-				var hash = (int)2166136261;
-				hash = (16777619 * hash) ^ x.GetHashCode();
-				hash = (16777619 * hash) ^ y.GetHashCode();
-				return hash;
-			}
+			return value.GetHashCode();
 		}
 
 		public override bool Equals(object rhs)
@@ -76,29 +92,28 @@ namespace CCEngine
 
 		public static bool operator==(XPos lhs, XPos rhs)
 		{
-			return lhs.x == rhs.x && lhs.y == rhs.y;
+			return lhs.value == rhs.value;
 		}
 
 		public static bool operator!=(XPos lhs, XPos rhs)
 		{
-			return lhs.x != rhs.x || lhs.y != rhs.y;
+			return lhs.value != rhs.value;
 		}
 
 		public static float Distance(XPos x0, XPos x1)
 		{
-			var dx = x1.X - x0.X;
-			var dy = x1.Y - x0.Y;
+			var dx = x1.LeptonsX - x0.LeptonsX;
+			var dy = x1.LeptonsY - x0.LeptonsY;
 			return MathF.Sqrt(dx * dx + dy * dy);
 		}
 
 		public static XPos Lerp(float alpha, XPos p0, XPos p1)
 		{
-			var dx = p1.X - p0.X;
-			var dy = p1.Y - p0.Y;
-			return new XPos(
-				0, 0,
-				p0.X + (int)(dx * alpha),
-				p0.Y + (int)(dy * alpha)
+			var dx = p1.LeptonsX - p0.LeptonsX;
+			var dy = p1.LeptonsY - p0.LeptonsY;
+			return XPos.FromLeptons(
+				(short)(p0.LeptonsX + (dx * alpha)),
+				(short)(p0.LeptonsY + (dy * alpha))
 			);
 		}
 	}

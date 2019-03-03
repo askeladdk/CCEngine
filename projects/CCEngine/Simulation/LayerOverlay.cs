@@ -55,7 +55,7 @@ namespace CCEngine.Simulation
 			{
 				for(var x = bounds.Left; x < bounds.Right; x++)
 				{
-					var cell = new CPos(x, y);
+					var cell = CPos.FromXY(x, y);
 					switch(layer[cell.CellId].Type)
 					{
 						case OverlayType.Wall:
@@ -178,7 +178,7 @@ namespace CCEngine.Simulation
 			{
 				for(var x = bounds.Left; x < bounds.Right; x++)
 				{
-					Update(new CPos(x, y));
+					Update(CPos.FromXY(x, y));
 				}
 			}
 		}
@@ -192,7 +192,7 @@ namespace CCEngine.Simulation
 				int screenX = bounds.ScreenTopLeft.X + Constants.TileSizeHalf;
 				for (int x = bounds.CellBounds.Left; x < bounds.CellBounds.Right; x++)
 				{
-					var cpos = new CPos(x, y);
+					var cpos = CPos.FromXY(x, y);
 					var cell = layer[cpos.CellId];
 					var ovrid = cell.OverlayID;
 					if(ovrid != 255)

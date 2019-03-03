@@ -61,13 +61,13 @@ namespace CCEngine.Logic
 			var pos = e.GUI.Mouse;
 			if(e.Interaction != Interaction.Cold)
 			{
-				highlight = g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos;
+				highlight = g.Camera.ScreenToMapCoord(pos.X, pos.Y);
 				g.World.Map.Highlight = highlight;
 			}
 
 			if(e.Interaction == Interaction.Enter)
 			{
-				g.SendMessage(new MissionMove(Entity.Create(28, 0), g.Camera.ScreenToMapCoord(pos.X, pos.Y).CPos));
+				g.SendMessage(new MissionMove(Entity.Create(28, 0), g.Camera.ScreenToMapCoord(pos.X, pos.Y)));
 			}
 		}
 
