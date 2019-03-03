@@ -92,9 +92,10 @@ namespace CCEngine.Simulation
 					{
 						DriveComponent drive = this.Registry.Get<DriveComponent>(move.Entity);
 						PoseComponent pose = this.Registry.Get<PoseComponent>(move.Entity);
+						// TODO: FlowField should be not directly attached to component.
 						var flowField = new Algorithms.SingularFlowField<SpeedType>(
 							this.map,
-							pose.Position.V0.CPos,
+							CPos.FromXPos(pose.Position.V0),
 							move.Destination,
 							drive.SpeedType);
 						drive = new DriveComponent(
@@ -169,7 +170,7 @@ namespace CCEngine.Simulation
 				var attrs = new AttributeTable
 				{
 					{"Basic.Owner", unit.house},
-					{"Locomotion.Position", unit.cell.XPos},
+					{"Locomotion.Position", XPos.FromCell(unit.cell)},
 					{"Locomotion.Facing", unit.facing},
 				};
 				var msg = new MsgSpawnEntity(unit.technoId, TechnoType.Vehicle, attrs);
@@ -205,7 +206,7 @@ namespace CCEngine.Simulation
 				return false;
 
 			var pose = ecregistry.Get<PoseComponent>(entity);
-			var center = pose.Position.V0.CPos;
+			var center = CPos.FromXPos(pose.Position.V0);
 
 			var occupy = placement.OccupyGrid;
 			map.Place(center, entity, occupy);

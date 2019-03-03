@@ -13,5 +13,15 @@ namespace CCEngine
 		{
 			return (e * Constants.TileSize + 128) / 256;
 		}
+
+		public static sbyte GetCell(short e)
+		{
+			return (sbyte)((e & 0x7F00) >> 8);
+		}
+
+		public static byte GetSubCell(short e)
+		{
+			return (byte)(e & 0xFF);
+		}
 	}
 }

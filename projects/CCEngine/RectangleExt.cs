@@ -7,7 +7,7 @@ namespace CCEngine
 	{
 		public static bool Contains(this Rectangle rect, CPos cpos)
 		{
-			return rect.Contains(cpos.X, cpos.Y);
+			return rect.Contains(cpos.CellX, cpos.CellY);
 		}
 
 		public static Rectangle Translate(this Rectangle rect, int dx, int dy)

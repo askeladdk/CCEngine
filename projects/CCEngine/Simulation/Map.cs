@@ -85,7 +85,7 @@ namespace CCEngine.Simulation
 			var cellid = cell.CellId;
 			for (int i = 0; i < grid.Length; i++)
 			{
-				var cpos = new CPos((ushort)(cellid + grid[i]));
+				var cpos = CPos.FromCell((ushort)(cellid + grid[i]));
 				var landtype = GetLandType(cpos);
 				var land = objectStore.GetLand(landtype);
 				if(!land.IsBuildable || !this.grid[cpos].IsPassable)

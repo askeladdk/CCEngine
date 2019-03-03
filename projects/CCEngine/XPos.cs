@@ -26,14 +26,13 @@ namespace CCEngine
 		public XPos Center { get => new XPos(value & 0xFF80FF80); }
 		public XPos TopLeft { get => new XPos(value & 0xFF00FF00); }
 		public bool IsNegative { get => (value & 0x80008000) != 0; }
-		public CPos CPos { get => new CPos(CellX, CellY); }
 
 		private XPos(uint value)
 		{
 			this.value = value;
 		}
 
-		public static XPos FromCellId(ushort cellId)
+		public static XPos FromCell(ushort cellId)
 		{
 			var x = (uint)cellId % Constants.MapSize;
 			var y = (uint)cellId / Constants.MapSize;
@@ -42,7 +41,7 @@ namespace CCEngine
 
 		public static XPos FromCell(CPos cell)
 		{
-			return XPos.FromCellId(cell.CellId);
+			return XPos.FromCell(cell.CellId);
 		}
 
 		public static XPos FromLeptons(short leptonsX, short leptonsY)

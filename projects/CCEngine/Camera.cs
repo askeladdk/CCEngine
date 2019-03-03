@@ -93,12 +93,13 @@ namespace CCEngine
 			SetTopLeft(topLeft.X + dx, topLeft.Y + dy);
 		}
 
-		public XPos ScreenToMapCoord(int mx, int my)
+		public CPos ScreenToMapCoord(int mx, int my)
 		{
 			Debug.Assert(viewPort.Contains(mx, my));
-			var x = Lepton.FromPixel(mx - viewPort.X + topLeft.X);
-			var y = Lepton.FromPixel(my - viewPort.Y + topLeft.Y);
-			return XPos.FromLeptons(x, y);
+			return CPos.FromXY(
+				Lepton.GetCell(Lepton.FromPixel(mx - viewPort.X + topLeft.X)),
+				Lepton.GetCell(Lepton.FromPixel(my - viewPort.Y + topLeft.Y))
+			);
 		}
 
 		public Point MapToScreenCoord(int mapX, int mapY)

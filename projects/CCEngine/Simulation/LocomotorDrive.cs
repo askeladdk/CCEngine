@@ -80,6 +80,7 @@ namespace CCEngine.Simulation
 			var destination = loco.Destination;
 			var currentPosition = position.V1;
 			var nextPosition = position.V1;
+			var currentCell = CPos.FromXPos(currentPosition);
 
 			// The PreMove state determines the next cell in the path and whether the
 			// final destination has been reached.
@@ -88,18 +89,18 @@ namespace CCEngine.Simulation
 				CardinalDirection dir;
 
 				// destination reached -> Idle
-				if(flowField == null || flowField.IsDestination(currentPosition.CPos))
+				if(flowField == null || flowField.IsDestination(currentCell))
 				{
 					state = DriveState.Idle;
 					flowField = null;
 				}
 				// Get the next cell in the path and the movement direction and speed -> Moving
-				else if(flowField.TryGetDirection(currentPosition.CPos, out dir))
+				else if(flowField.TryGetDirection(currentCell, out dir))
 				{
 					var dirvec = dir.ToVector();
-					var spd = flowField.SpeedAt(currentPosition.CPos, speedType, speed);
+					var spd = flowField.SpeedAt(currentCell, speedType, speed);
 					movementVector = dirvec.Multiply(spd);
-					destination = currentPosition.CPos.Translate(dirvec.X, dirvec.Y).XPos;
+					destination = XPos.FromCell(currentCell.Translate(dirvec.X, dirvec.Y));
 					facing = new BinaryAngle(dir);
 					state = DriveState.Moving;
 				}
@@ -127,7 +128,7 @@ namespace CCEngine.Simulation
 				{
 					// check if next cell in the path follows the same direction
 					var dirvec = facing.CardinalDirection.ToVector();
-					var next = currentPosition.CPos.Translate(dirvec.X, dirvec.Y);
+					var next = currentCell.Translate(dirvec.X, dirvec.Y);
 					CardinalDirection nextdir;
 					var notAtEndOfPath = flowField.TryGetDirection(next, out nextdir);
 					contheading = notAtEndOfPath && (nextdir == facing.CardinalDirection);

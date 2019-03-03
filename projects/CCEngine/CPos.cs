@@ -11,19 +11,33 @@ namespace CCEngine
 	{
 		private ushort cellId;
 
-		public int X { get => cellId % Constants.MapSize; }
-		public int Y { get => cellId / Constants.MapSize; }
+		public int CellX { get => cellId % Constants.MapSize; }
+		public int CellY { get => cellId / Constants.MapSize; }
 		public ushort CellId { get => cellId; }
-		public XPos XPos { get => XPos.FromCellId(cellId); }
+
+		private CPos(ushort cellId)
+		{
+			this.cellId = cellId;
+		}
+
+		public static CPos FromCell(ushort cellId)
+		{
+			return new CPos(cellId);
+		}
+
+		public static CPos FromXY(int x, int y)
+		{
+			return new CPos((ushort)(y * Constants.MapSize + x));
+		}
+
+		public static CPos FromXPos(XPos xpos)
+		{
+			return CPos.FromXY(xpos.CellX, xpos.CellY);
+		}
 
 		public CPos(int cx, int cy)
 		{
 			this.cellId = MakeCellId(cx, cy);
-		}
-
-		public CPos(ushort cellId)
-		{
-			this.cellId = cellId;
 		}
 
 		public CPos Translate(int dx, int dy)
@@ -33,7 +47,7 @@ namespace CCEngine
 
 		public override string ToString()
 		{
-			return "({0}, {1})".F(this.X, this.Y);
+			return "({0}, {1})".F(this.CellX, this.CellY);
 		}
 
 		public override int GetHashCode()
